@@ -41,6 +41,7 @@ Validation split:
 - `npm run validate:ui` is the trusted standalone-app browser harness
 - `npm run build` validates that the extension bundle can be packaged into `dist/extension`
 - `npm run validate:extension` is the trusted live Quran.com extension smoke harness
+- GitHub Actions runs the stable remote subset: `npm test`, `npm run lint`, `npm run build`, `npm run validate:agent-docs`, `npm run validate:workspace-hygiene`, and `npm run validate:ui`
 
 ## Approval Gates
 

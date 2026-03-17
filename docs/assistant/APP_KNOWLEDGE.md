@@ -27,6 +27,7 @@ This bridge doc is intentionally shorter than the canonical APP_KNOWLEDGE.md.
 - Use `http://127.0.0.1:4173` as the canonical standalone local URL.
 - `npm run build` validates the standalone app and produces the extension bundle in `dist/extension`.
 - `npm run validate:extension` is the repo-owned live Quran.com extension smoke harness.
+- GitHub Actions runs the stable remote validation subset; the live Quran.com smoke stays local.
 - This folder is a git repository. Use WSL-native git and `gh` from this environment to avoid UNC-path safe-directory issues.
 
 When this bridge conflicts with source code or the canonical brief, defer to them.

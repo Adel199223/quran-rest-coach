@@ -74,6 +74,8 @@ wsl.exe bash -lc "cd /home/fa507/dev/quran-rest-coach && npm run validate:extens
 
 `npm run validate:extension` runs the repo-owned live Quran.com smoke against the unpacked MV3 bundle in `dist/extension` and writes its summary plus extension screenshots to `output/playwright/`.
 
+GitHub Actions CI now runs `npm test`, `npm run lint`, `npm run build`, `npm run validate:agent-docs`, `npm run validate:workspace-hygiene`, and `npm run validate:ui` on pushes and pull requests. The live Quran.com extension smoke remains a local validation step.
+
 ## Assistant Docs
 
 - Canonical architecture and status: `APP_KNOWLEDGE.md`

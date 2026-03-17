@@ -149,6 +149,7 @@
       "doc": "docs/assistant/workflows/CI_REPO_WORKFLOW.md",
       "scope": "Repo validation routines, extension packaging, and repo-state caveats",
       "primary_files": [
+        ".github/workflows/ci.yml",
         "package.json",
         "tooling/build-extension.mjs",
         "tooling/",
@@ -158,12 +159,18 @@
       "targeted_tests": [
         "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm test\"",
         "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm run lint\"",
-        "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm run build\""
+        "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm run build\"",
+        "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm run validate:agent-docs\"",
+        "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm run validate:workspace-hygiene\"",
+        "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm run validate:ui\""
       ],
       "validation_commands": [
         "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm test\"",
         "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm run lint\"",
-        "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm run build\""
+        "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm run build\"",
+        "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm run validate:agent-docs\"",
+        "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm run validate:workspace-hygiene\"",
+        "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm run validate:ui\""
       ]
     },
     {

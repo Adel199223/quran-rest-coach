@@ -17,6 +17,7 @@ The product is designed around calm break prompts, page-based pacing, low-fricti
 - Extension side panel, background worker, and Quran.com content companion are implemented.
 - Automatic Quran.com route detection and distinct-page observation are implemented.
 - Local-only persistence and cross-shell JSON import/export are implemented.
+- GitHub Actions CI is implemented for the stable repo validation contract.
 - Tests, lint, and build are passing.
 - Repo-owned live Quran.com extension smoke validation is implemented.
 
@@ -130,6 +131,7 @@ Notes:
 - `npm run build` now builds the standalone web app and the extension bundle in `dist/extension`
 - `npm run validate:ui` validates the standalone app and writes artifacts to `output/playwright/`
 - `npm run validate:extension` runs the repo-owned live Quran.com unpacked-extension smoke and writes artifacts to `output/playwright/`
+- GitHub Actions runs the stable subset: test, lint, build, assistant-doc validation, workspace hygiene, and standalone UI validation
 
 ## Known Constraints
 
