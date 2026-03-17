@@ -87,6 +87,6 @@ Browser validation uses `npm run validate:ui` and writes artifacts to `output/pl
 
 ## Known Constraints
 
-- The current folder is not a git worktree.
+- The current folder is now a git repository, but WSL-native git is the trusted path from this environment because Windows git on the UNC path can trigger safe-directory warnings.
 - PowerShell UNC execution breaks direct npm script runs, so documentation should always prefer the WSL wrapper.
 - Localization is scaffolding-only today. Do not assume Arabic copy, RTL layouts, or localized persistence behavior already exist.

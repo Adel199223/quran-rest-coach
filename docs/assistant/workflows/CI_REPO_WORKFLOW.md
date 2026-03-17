@@ -50,7 +50,7 @@ wsl.exe bash -lc "cd /home/fa507/dev/quran-rest-coach && npm run build"
 
 - If the PowerShell UNC path breaks npm script execution, switch to the WSL-safe wrapper immediately.
 - If a validator is added, add its command and test coverage in the same change.
-- If repo-state assumptions depend on git, document that the current folder is not a git worktree.
+- If repo-state assumptions depend on git, confirm branch, remotes, and tracking state from WSL-native git before continuing.
 
 ## Handoff Checklist
 

@@ -22,6 +22,6 @@ This bridge doc is intentionally shorter than the canonical APP_KNOWLEDGE.md.
 
 - Use the WSL-safe wrapper from this environment for npm commands.
 - Use `http://127.0.0.1:4173` as the canonical local URL.
-- The current folder is not a git worktree, so git workflow docs are policy-only until that changes.
+- The current folder is now a git repository. Use WSL-native git and `gh` from this environment to avoid UNC-path safe-directory issues.
 
 When this bridge conflicts with source code or the canonical brief, defer to them.

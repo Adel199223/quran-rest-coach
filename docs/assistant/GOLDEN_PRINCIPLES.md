@@ -37,4 +37,4 @@ This is the source of truth for enforceable assistant rules in this repo.
 ## Safety Gates
 
 - Ask before destructive operations, risky schema shifts, publish/deploy actions, force-push/history rewrite, or non-essential network actions.
-- Treat git branch and worktree guidance as conditional because this folder is not currently a git worktree.
+- This repo is git-backed now, so branch and worktree guidance is active. Prefer WSL-native git from this environment to avoid Windows UNC safe-directory friction.

@@ -196,7 +196,7 @@
     "golden_principles_source_of_truth": "docs/assistant/GOLDEN_PRINCIPLES.md",
     "execplan_policy": "Major or multi-file work should use docs/assistant/exec_plans/PLANS.md and create a plan in exec_plans/active/.",
     "approval_gates_policy": "AGENTS.md and agent.md define ask-before-execute triggers for destructive, risky, publish, history-rewrite, and non-essential network actions.",
-    "worktree_isolation_policy": "If git becomes available, use worktrees or isolated branches for major parallel work; current repo-state guidance is conditional because this folder is not a git worktree.",
+    "worktree_isolation_policy": "This repo is git-backed now. Use worktrees or isolated branches for major parallel work, and prefer WSL-native git from this environment.",
     "local_persistence_source_of_truth": "docs/assistant/LOCAL_PERSISTENCE_KNOWLEDGE.md",
     "ui_surface_validation_policy": "docs/assistant/workflows/UI_SURFACE_VALIDATION_WORKFLOW.md is the source of truth for browser validation flow, environment matrix, locators, artifacts, and fallback behavior.",
     "benchmark_matrix_policy": "Create or refresh a benchmark matrix only for parity-sensitive UI work against named references.",

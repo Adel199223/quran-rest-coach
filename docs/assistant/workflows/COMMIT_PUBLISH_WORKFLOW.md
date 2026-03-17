@@ -22,9 +22,9 @@ Don't use this workflow when the task is normal implementation work that does no
 
 Instead use the app-specific workflow that matches the code change.
 
-Don't use this workflow when git operations are unavailable because the folder is not a git worktree.
+Don't use this workflow when git metadata is unavailable or the repository state is broken.
 
-Instead state the constraint and keep the guidance policy-level.
+Instead repair or confirm repo state first, then continue with commit or publish work.
 
 ## Primary Files
 
@@ -34,7 +34,7 @@ Instead state the constraint and keep the guidance policy-level.
 
 ## Minimal Commands
 
-If git is available, follow this order:
+Follow this order:
 
 1. Branch safety gate before staging
 2. `git fetch --prune origin`
@@ -52,8 +52,8 @@ If git is available, follow this order:
 
 ## Failure Modes and Fallback Steps
 
-- If the folder is not a git worktree, stop short of claiming that staging or commit commands were run.
-- If a change is major and git later becomes available, use a dedicated branch or worktree before staging.
+- If git metadata is missing or the repository is in a broken state, stop short of claiming that staging or commit commands were run.
+- If a change is major, use a dedicated branch or worktree before staging.
 - Never force-push `main`.
 - Never publish or release without an explicit user request.
 

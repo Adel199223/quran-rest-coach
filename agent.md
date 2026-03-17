@@ -54,9 +54,9 @@ Ask before executing:
 
 ## Worktree Isolation
 
-- If git is available later, keep `main` stable and use a branch or worktree for major work.
+- Keep `main` stable and use a branch or worktree for major work.
 - For parallel threads, prefer separate worktrees over overlapping edits in one checkout.
-- This directory is not currently a git worktree, so branch and worktree instructions are future-facing policy.
+- This directory is now a git repository. Use WSL-native git from this environment, because Windows git on the UNC path can trigger safe-directory friction.
 
 ## Task Routing
 

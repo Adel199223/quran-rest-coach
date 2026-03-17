@@ -27,7 +27,7 @@ Major or multi-file work should create an ExecPlan in `docs/assistant/exec_plans
 
 ## Worktree Isolation
 
-If this folder becomes a git worktree later, use separate worktrees or branches for parallel major changes. This directory is currently not a git worktree, so treat the guidance as policy for future use.
+This directory is now a git repository. Use separate worktrees or branches for parallel major changes, and prefer WSL-native git from this environment to avoid Windows UNC safe-directory issues.
 
 ## Routing
 
