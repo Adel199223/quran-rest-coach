@@ -1,0 +1,206 @@
+{
+  "version": 1,
+  "canonical": {
+    "app": "APP_KNOWLEDGE.md",
+    "local_persistence": "docs/assistant/LOCAL_PERSISTENCE_KNOWLEDGE.md",
+    "golden_principles": "docs/assistant/GOLDEN_PRINCIPLES.md"
+  },
+  "bridges": {
+    "assistant_app": "docs/assistant/APP_KNOWLEDGE.md",
+    "index": "docs/assistant/INDEX.md"
+  },
+  "user_guides": {
+    "app": "docs/assistant/features/APP_USER_GUIDE.md",
+    "primary_workflow": "docs/assistant/features/READING_SESSION_USER_GUIDE.md"
+  },
+  "workflows": [
+    {
+      "id": "reading_session",
+      "doc": "docs/assistant/workflows/READING_SESSION_WORKFLOW.md",
+      "scope": "Session logic, break tiers, overlays, and pace nudges",
+      "primary_files": [
+        "src/App.tsx",
+        "src/domain/session.ts",
+        "src/domain/breakEngine.ts",
+        "src/components/SessionSurface.tsx",
+        "src/components/BreakOverlay.tsx"
+      ],
+      "targeted_tests": [
+        "src/domain/session.test.ts",
+        "src/domain/breakEngine.test.ts",
+        "src/App.test.tsx"
+      ],
+      "validation_commands": [
+        "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm test\"",
+        "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm run validate:ui\""
+      ]
+    },
+    {
+      "id": "local_persistence",
+      "doc": "docs/assistant/workflows/LOCAL_PERSISTENCE_WORKFLOW.md",
+      "scope": "Local storage contracts, keys, schema versions, and persistence-safe changes",
+      "primary_files": [
+        "src/lib/storage.ts",
+        "src/domain/contracts.ts",
+        "src/domain/settings.ts",
+        "src/domain/session.ts"
+      ],
+      "targeted_tests": [
+        "src/domain/storage.test.ts",
+        "src/domain/settings.test.ts",
+        "src/domain/session.test.ts"
+      ],
+      "validation_commands": [
+        "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm test\""
+      ]
+    },
+    {
+      "id": "ui_surface_validation",
+      "doc": "docs/assistant/workflows/UI_SURFACE_VALIDATION_WORKFLOW.md",
+      "scope": "Browser validation, responsive checks, screenshots, and fallback review",
+      "primary_files": [
+        "src/App.tsx",
+        "src/App.css",
+        "src/components/SessionSurface.tsx",
+        "src/components/HistorySurface.tsx",
+        "src/components/SettingsSurface.tsx",
+        "tooling/validate-ui-surface.mjs"
+      ],
+      "targeted_tests": [
+        "src/App.test.tsx",
+        "test/tooling/validate-ui-surface.test.ts"
+      ],
+      "validation_commands": [
+        "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm run validate:ui\""
+      ]
+    },
+    {
+      "id": "localization",
+      "doc": "docs/assistant/workflows/LOCALIZATION_WORKFLOW.md",
+      "scope": "English-first strings, glossary updates, and future localization prep",
+      "primary_files": [
+        "src/lib/strings.ts",
+        "docs/assistant/LOCALIZATION_GLOSSARY.md"
+      ],
+      "targeted_tests": [
+        "src/App.test.tsx"
+      ],
+      "validation_commands": [
+        "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm test\""
+      ]
+    },
+    {
+      "id": "workspace_performance",
+      "doc": "docs/assistant/workflows/PERFORMANCE_WORKFLOW.md",
+      "scope": "Watcher, search, and artifact hygiene for the local workspace",
+      "primary_files": [
+        ".vscode/settings.json",
+        ".gitignore",
+        "docs/assistant/PERFORMANCE_BASELINES.md"
+      ],
+      "targeted_tests": [
+        "test/tooling/validate-workspace-hygiene.test.ts"
+      ],
+      "validation_commands": [
+        "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm run validate:workspace-hygiene\""
+      ]
+    },
+    {
+      "id": "reference_discovery",
+      "doc": "docs/assistant/workflows/REFERENCE_DISCOVERY_WORKFLOW.md",
+      "scope": "Named-product inspiration and parity discovery",
+      "primary_files": [
+        "docs/assistant/workflows/REFERENCE_DISCOVERY_WORKFLOW.md",
+        "docs/assistant/manifest.json"
+      ],
+      "targeted_tests": [
+        "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm run validate:agent-docs\""
+      ],
+      "validation_commands": [
+        "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm run validate:agent-docs\""
+      ]
+    },
+    {
+      "id": "ci_repo_ops",
+      "doc": "docs/assistant/workflows/CI_REPO_WORKFLOW.md",
+      "scope": "Repo validation routines, future CI hooks, and repo-state caveats",
+      "primary_files": [
+        "package.json",
+        "vite.config.ts",
+        "docs/assistant/workflows/CI_REPO_WORKFLOW.md"
+      ],
+      "targeted_tests": [
+        "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm test\"",
+        "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm run lint\"",
+        "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm run build\""
+      ],
+      "validation_commands": [
+        "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm test\"",
+        "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm run lint\"",
+        "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm run build\""
+      ]
+    },
+    {
+      "id": "commit_publish_ops",
+      "doc": "docs/assistant/workflows/COMMIT_PUBLISH_WORKFLOW.md",
+      "scope": "Commit, branch, worktree, push, and publish safety",
+      "primary_files": [
+        "docs/assistant/workflows/COMMIT_PUBLISH_WORKFLOW.md",
+        "AGENTS.md",
+        "agent.md"
+      ],
+      "targeted_tests": [
+        "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm run validate:agent-docs\""
+      ],
+      "validation_commands": [
+        "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm run validate:agent-docs\""
+      ]
+    },
+    {
+      "id": "docs_maintenance",
+      "doc": "docs/assistant/workflows/DOCS_MAINTENANCE_WORKFLOW.md",
+      "scope": "Assistant docs sync, bridge/canonical hygiene, and user-guide updates",
+      "primary_files": [
+        "APP_KNOWLEDGE.md",
+        "docs/assistant",
+        "AGENTS.md",
+        "agent.md"
+      ],
+      "targeted_tests": [
+        "test/tooling/validate-agent-docs.test.ts"
+      ],
+      "validation_commands": [
+        "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm run validate:agent-docs\""
+      ]
+    }
+  ],
+  "global_commands": {
+    "dev": "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm run dev\"",
+    "test": "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm test\"",
+    "lint": "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm run lint\"",
+    "build": "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm run build\"",
+    "validate_agent_docs": "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm run validate:agent-docs\"",
+    "validate_workspace_hygiene": "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm run validate:workspace-hygiene\"",
+    "validate_ui": "wsl.exe bash -lc \"cd /home/fa507/dev/quran-rest-coach && npm run validate:ui\""
+  },
+  "contracts": {
+    "template_read_policy": "docs/assistant/templates/* is read-only template material and should not be edited during app work.",
+    "post_change_docs_sync_prompt_policy": "After significant implementation changes, ask exactly: Would you like me to run Assistant Docs Sync for this change now?",
+    "sub_agent_routing_policy": "The main agent is the integrator; sub-agents are for narrow, bounded, mostly read-heavy exploration, disjoint validation, or tightly scoped docs work.",
+    "validation_environment_policy": "Use WSL-safe wrappers for npm commands from this environment and treat http://127.0.0.1:4173 as the canonical local URL.",
+    "artifact_capture_policy": "UI validation artifacts live under output/playwright/ and include desktop screenshot, mobile screenshot, summary JSON, and failure artifacts when needed.",
+    "validation_fallback_policy": "When broad browser automation is unavailable, use the repo-owned validate-ui harness plus targeted tests and manual review instead of pretending a missing suite exists.",
+    "user_guides_support_usage_policy": "Support and non-technical explanation tasks should start with the app user guides, then confirm against canonical technical docs if needed.",
+    "user_guides_canonical_deference_policy": "User guides explain behavior plainly, but canonical technical docs and source code win when details conflict.",
+    "user_guides_update_sync_policy": "Update only the user guides touched by the confirmed change; do not rewrite unrelated guides.",
+    "golden_principles_source_of_truth": "docs/assistant/GOLDEN_PRINCIPLES.md",
+    "execplan_policy": "Major or multi-file work should use docs/assistant/exec_plans/PLANS.md and create a plan in exec_plans/active/.",
+    "approval_gates_policy": "AGENTS.md and agent.md define ask-before-execute triggers for destructive, risky, publish, history-rewrite, and non-essential network actions.",
+    "worktree_isolation_policy": "If git becomes available, use worktrees or isolated branches for major parallel work; current repo-state guidance is conditional because this folder is not a git worktree.",
+    "local_persistence_source_of_truth": "docs/assistant/LOCAL_PERSISTENCE_KNOWLEDGE.md",
+    "ui_surface_validation_policy": "docs/assistant/workflows/UI_SURFACE_VALIDATION_WORKFLOW.md is the source of truth for browser validation flow, environment matrix, locators, artifacts, and fallback behavior.",
+    "benchmark_matrix_policy": "Create or refresh a benchmark matrix only for parity-sensitive UI work against named references.",
+    "inspiration_reference_discovery_policy": "Run docs/assistant/workflows/REFERENCE_DISCOVERY_WORKFLOW.md before implementation decisions when the user requests parity or inspiration from a named product."
+  },
+  "last_updated": "2026-03-17"
+}

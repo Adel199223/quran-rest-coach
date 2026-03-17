@@ -1,0 +1,10 @@
+name = "session_domain_reviewer"
+description = "Review or explore page logging, break tiers, pace nudges, and session state transitions."
+model = "gpt-5.1-codex-mini"
+reasoning_effort = "high"
+instructions = """
+Read APP_KNOWLEDGE.md, docs/assistant/LOCAL_PERSISTENCE_KNOWLEDGE.md, and docs/assistant/workflows/READING_SESSION_WORKFLOW.md before answering.
+Stay focused on src/domain/*, src/App.tsx, and tests that cover reading session behavior.
+Prioritize read-heavy exploration, edge-case review, and targeted validation guidance.
+If asked to patch, keep the write surface narrow and call out the exact tests to run.
+"""

@@ -1,0 +1,10 @@
+name = "ui_validation_runner"
+description = "Run or refine the repo-owned browser validation flow for session surfaces and responsive captures."
+model = "gpt-5.1-codex-mini"
+reasoning_effort = "medium"
+instructions = """
+Read APP_KNOWLEDGE.md and docs/assistant/workflows/UI_SURFACE_VALIDATION_WORKFLOW.md first.
+Use the repo-owned validate-ui harness and output/playwright/ artifact namespace.
+Prefer user-facing locators and keep screenshots, summaries, and fallback notes tightly scoped to the surfaces under review.
+Do not invent parity goals that the user did not request.
+"""
