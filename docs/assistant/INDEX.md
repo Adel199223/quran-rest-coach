@@ -5,13 +5,13 @@ Use this index when you need routing help. Do not treat it as canonical architec
 ## Core Docs
 
 - `APP_KNOWLEDGE.md`
-  Use when you need canonical app architecture, current status, or runtime truth.
+  Use when you need canonical product architecture, runtime truth, or current status.
 - `docs/assistant/APP_KNOWLEDGE.md`
   Use when you need a shorter bridge summary for routing.
 - `docs/assistant/GOLDEN_PRINCIPLES.md`
   Use when you need enforceable mechanical rules.
 - `docs/assistant/LOCAL_PERSISTENCE_KNOWLEDGE.md`
-  Use when touching schema versions, storage keys, or local storage behavior.
+  Use when touching storage adapters, schema versions, keys, or import/export behavior.
 - `docs/assistant/PERFORMANCE_BASELINES.md`
   Use when workspace performance or excludes need attention.
 - `docs/assistant/LOCALIZATION_GLOSSARY.md`
@@ -20,18 +20,18 @@ Use this index when you need routing help. Do not treat it as canonical architec
 ## User Guides
 
 - `docs/assistant/features/APP_USER_GUIDE.md`
-  Use when the user wants a plain-language explanation of the app.
+  Use when the user wants a plain-language explanation of the product, extension setup, or screen purpose.
 - `docs/assistant/features/READING_SESSION_USER_GUIDE.md`
-  Use when the user wants a plain-language walkthrough of the reading-session flow.
+  Use when the user wants a plain-language walkthrough of the session flow, Quran.com tracking behavior, or break prompts.
 
 ## Workflows
 
 - `docs/assistant/workflows/READING_SESSION_WORKFLOW.md`
-  Use when changing page logging, break prompts, pause/resume, or hybrid pace behavior.
+  Use when changing explicit session start, page logging, Quran.com observation, correction rules, break prompts, pause/resume, or chip/toast behavior.
 - `docs/assistant/workflows/LOCAL_PERSISTENCE_WORKFLOW.md`
-  Use when changing local storage keys, contracts, normalization, or persistence tests.
+  Use when changing storage adapters, repository contracts, keys, normalization, or portability/import-export behavior.
 - `docs/assistant/workflows/UI_SURFACE_VALIDATION_WORKFLOW.md`
-  Use when changing browser behavior, top-level UI, overlays, responsive layout, or visual hierarchy.
+  Use when changing standalone layout, side panel layout, companion chip/toast behavior, extension packaging, or visual validation flow.
 - `docs/assistant/workflows/LOCALIZATION_WORKFLOW.md`
   Use when updating user-facing terminology or planning future localization work.
 - `docs/assistant/workflows/PERFORMANCE_WORKFLOW.md`
@@ -39,7 +39,7 @@ Use this index when you need routing help. Do not treat it as canonical architec
 - `docs/assistant/workflows/REFERENCE_DISCOVERY_WORKFLOW.md`
   Use when the user asks for parity or inspiration from a named app, site, or product.
 - `docs/assistant/workflows/CI_REPO_WORKFLOW.md`
-  Use when validating the repo, checking scripts, or planning future CI-safe routines.
+  Use when validating repo commands, build scripts, tooling, or future CI-safe routines.
 - `docs/assistant/workflows/COMMIT_PUBLISH_WORKFLOW.md`
   Use when commit, branch, worktree, publish, or release requests appear.
 - `docs/assistant/workflows/DOCS_MAINTENANCE_WORKFLOW.md`
@@ -50,3 +50,4 @@ Use this index when you need routing help. Do not treat it as canonical architec
 - Support tasks should start with the user guides, then confirm against canonical docs as needed.
 - Template files under `docs/assistant/templates/` are read-only assets for reuse and should not be edited during app work.
 - Sub-agents should be used for narrow, bounded, mostly read-heavy tasks. The main agent remains the integrator.
+- Quran.com extension work usually spans three docs: `APP_KNOWLEDGE.md`, `LOCAL_PERSISTENCE_KNOWLEDGE.md`, and `UI_SURFACE_VALIDATION_WORKFLOW.md`.

@@ -2,7 +2,7 @@
 
 ## Use This Guide When
 
-Use this guide when someone wants a plain-language explanation of what the app does, what each screen is for, or how to complete a normal reading session without technical jargon.
+Use this guide when someone wants a plain-language explanation of what the product does, how the standalone app and extension differ, how to load the extension, or what each screen is for without technical jargon.
 
 ## Do Not Use This Guide For
 
@@ -18,38 +18,70 @@ This guide explains the app simply. When details conflict, defer to `APP_KNOWLED
 
 ## Quick Start (No Technical Background)
 
-1. Open the app.
-2. Go to the `Session` screen.
-3. Press `Start session`.
-4. Each time you finish a page, press `+1 page`. If you finished two pages, press `+2 pages`.
-5. When a rest prompt appears, you can take the break, snooze it, or skip it.
-6. Press `End session` when you are done. The finished session moves into local history on this device.
+You can use Quran Rest Coach in two ways:
+
+1. Standalone app
+   Open the local app, start a session, log pages manually, and manage breaks there.
+2. Quran.com extension
+   Load the extension in Chrome or Edge, open Quran.com, start a session in the side panel, and let page tracking assist you while you read.
+
+## Loading The Extension
+
+1. Build the project so `dist/extension` exists.
+2. Open `chrome://extensions` or `edge://extensions`.
+3. Turn on `Developer mode`.
+4. Choose `Load unpacked`.
+5. Select the `dist/extension` folder.
+6. If your browser is running on Windows, you can open the same folder through `\\wsl.localhost\Ubuntu\home\fa507\dev\quran-rest-coach\dist\extension`.
+7. Open Quran.com and use the Quran Rest Coach side panel.
 
 ## Terms in Plain English
 
 - Session: one reading period that you start and end yourself.
-- Break prompt: a screen that appears when the app thinks it is a good time to rest.
-- Pace hint: a gentle reminder that your reading is moving slower than the current pace target.
-- Resume saved session: reopen the last unfinished session that was saved on this device.
-- History: your completed sessions saved locally in the browser.
+- Side panel: the extension’s main screen inside the browser.
+- Companion chip: the small Quran.com helper that appears while the extension is active.
+- Break prompt: a reminder that it is a good time to rest.
+- Pace hint: a gentle reminder that a break is near and your pace is running late.
+- Resume saved session: reopen the last unfinished session saved on this device.
+- History: your completed sessions saved locally on this device.
 
-## Main Screens
+## Main Surfaces
 
 ### Session
 
-This is where you spend most of your time. It shows your current status, page count, the next break, and the estimated time until the next break.
+This is where you spend most of your time. It shows your current status, page count, next break, and estimated time until the next break.
 
 ### History
 
-This screen shows completed sessions from this device only. It helps you review duration, page count, breaks, snoozes, and skipped prompts.
+This shows completed sessions from this device only. It helps you review duration, page count, breaks, snoozes, and skipped prompts.
 
 ### Settings
 
-This screen lets you change pace, break timing, and comfort options such as large text, reduced motion, high contrast, sepia mode, and soft chime prompts.
+This lets you change pace, break timing, and comfort options such as large text, reduced motion, high contrast, sepia mode, and soft chime prompts.
+
+### Quran.com Companion
+
+This is the small helper on the Quran.com page. It stays quiet most of the time, can open the side panel, and becomes more visible when a break is active or nearly due.
+
+## Standalone App vs Extension
+
+- Standalone app
+  Best when you want a local reading coach without integrating it into Quran.com.
+- Extension
+  Best when you read directly on Quran.com and want automatic page tracking help plus manual correction tools.
+
+Both versions stay local-first and use the same break logic.
+
+## Import And Export
+
+- The standalone app and the extension store data in different browser locations.
+- Use export to save your settings, active session, and history to a JSON file.
+- Use import in the other shell to bring that data in.
 
 ## Things To Know
 
 - The app does not need an account.
 - The app does not send your reading data to a server.
-- Your session, history, and settings are stored locally in your browser.
+- Your data stays local in the browser or extension storage.
+- The extension works only on Quran.com.
 - The app is English-first today.

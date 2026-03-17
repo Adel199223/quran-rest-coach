@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Quran Rest Coach",
+  "description": "A calm Quran.com reading companion with automatic page tracking and gentle break prompts.",
+  "version": "1.0.0",
+  "permissions": ["storage", "sidePanel"],
+  "host_permissions": ["https://quran.com/*"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "action": {
+    "default_title": "Open Quran Rest Coach"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://quran.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

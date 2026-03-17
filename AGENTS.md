@@ -33,9 +33,10 @@ This directory is now a git repository. Use separate worktrees or branches for p
 
 - Support or plain-language explanation tasks go to `docs/assistant/features/APP_USER_GUIDE.md` first.
 - Reading-session walkthroughs go to `docs/assistant/features/READING_SESSION_USER_GUIDE.md`.
-- Browser or UI validation work goes to `docs/assistant/workflows/UI_SURFACE_VALIDATION_WORKFLOW.md`.
+- Quran.com tracking, break behavior, and manual-correction work go to `docs/assistant/workflows/READING_SESSION_WORKFLOW.md`.
+- Standalone or extension UI validation work goes to `docs/assistant/workflows/UI_SURFACE_VALIDATION_WORKFLOW.md`.
 - Named-product parity or inspiration work goes to `docs/assistant/workflows/REFERENCE_DISCOVERY_WORKFLOW.md` before implementation decisions.
-- Local storage, schema, or persistence changes go to `docs/assistant/LOCAL_PERSISTENCE_KNOWLEDGE.md` and `docs/assistant/workflows/LOCAL_PERSISTENCE_WORKFLOW.md`.
+- Local storage, adapters, schema, or portability changes go to `docs/assistant/LOCAL_PERSISTENCE_KNOWLEDGE.md` and `docs/assistant/workflows/LOCAL_PERSISTENCE_WORKFLOW.md`.
 
 ## Sub-Agent Routing
 

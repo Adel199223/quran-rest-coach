@@ -1,50 +1,34 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import './App.css'
+import { type ActiveSession, type SessionHistoryEntry, type TimerSettings } from './domain'
 import {
-  BreakOverlay,
-  HistorySurface,
-  SessionSurface,
-  SettingsSurface,
-  SurfaceTabs,
-  type HistoryEntryView,
-  type SessionTimelineEntry,
-  type SettingsFormValues,
-  type SurfaceKey,
-} from './components'
+  buildBreakTiers,
+  buildEstimatedToBreakLabel,
+  buildHistoryEntries,
+  buildNextBreakLabel,
+  buildPaceHint,
+  buildResetSettings,
+  buildSettingsFormValues,
+  buildSummaryLabel,
+  buildTimeline,
+  BREAK_SUGGESTIONS,
+  getStatusLabel,
+} from './app/view-model'
+import { CoachDashboard } from './app/CoachDashboard'
 import {
   addPages,
-  computeHybridNudge,
-  createDefaultTimerSettings,
   endSession,
-  getNextBreakHint,
   pauseSession,
   resumeSession,
   skipBreak,
   snoozeBreak,
   startSession,
-  type ActiveSession,
-  type BreakKind,
-  type BreakTier,
-  type SessionHistoryEntry,
-  type TimerSettings,
   undoLastPages,
 } from './domain'
 import { playSoftChime } from './lib/audio'
-import {
-  formatBreakKind,
-  formatClockDuration,
-  formatPageLabel,
-  formatSessionDate,
-  formatTimeStamp,
-} from './lib/format'
+import { formatBreakKind } from './lib/format'
 import { createLocalStorageRepository } from './lib/storage'
 import { getStrings } from './lib/strings'
-
-const BREAK_SUGGESTIONS: Record<BreakKind, string> = {
-  micro: 'Blink slowly, unclench your jaw, and let your eyes soften.',
-  short: 'Look across the room and let your breathing settle before continuing.',
-  long: 'Stand up, stretch, and return only when your focus feels lighter.',
-}
 
 function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) {
@@ -59,252 +43,84 @@ function isEditableTarget(target: EventTarget | null): boolean {
   )
 }
 
-function getThemeMode(settings: TimerSettings): 'contrast' | 'sepia' | 'plain' {
-  if (settings.highContrast) {
-    return 'contrast'
-  }
-
-  if (settings.sepiaTheme) {
-    return 'sepia'
-  }
-
-  return 'plain'
-}
-
-function getStatusLabel(session: ActiveSession | null): string {
-  if (!session || session.status === 'idle') {
-    return 'Ready'
-  }
-
-  switch (session.status) {
-    case 'reading':
-      return 'Reading'
-    case 'paused':
-      return 'Paused'
-    case 'break':
-      return 'Resting'
-    default:
-      return 'Ready'
-  }
-}
-
-function buildSettingsFormValues(settings: TimerSettings): SettingsFormValues {
-  const [shortTier, mediumTier, longTier] = [...settings.breakTiers].sort(
-    (left, right) => left.everyPages - right.everyPages,
-  )
-
-  return {
-    paceSecondsPerTwoPages: settings.paceSecondsPerTwoPages,
-    shortBreakEveryPages: shortTier?.everyPages ?? 2,
-    shortBreakSeconds: shortTier?.durationSeconds ?? 15,
-    mediumBreakEveryPages: mediumTier?.everyPages ?? 5,
-    mediumBreakSeconds: mediumTier?.durationSeconds ?? 60,
-    longBreakEveryPages: longTier?.everyPages ?? 10,
-    longBreakSeconds: longTier?.durationSeconds ?? 120,
-    softChime: settings.softChimeEnabled,
-    reducedMotion: settings.reducedMotion,
-    largeText: settings.largeText,
-    highContrast: settings.highContrast,
-    sepiaTheme: settings.sepiaTheme,
-    resumeOnReopen: settings.resumeOnReopen,
-  }
-}
-
-function buildBreakTiers(values: SettingsFormValues): BreakTier[] {
-  const tiers: BreakTier[] = [
-    {
-      everyPages: Math.max(1, Math.trunc(values.shortBreakEveryPages)),
-      durationSeconds: Math.max(5, Math.trunc(values.shortBreakSeconds)),
-      kind: 'micro',
-    },
-    {
-      everyPages: Math.max(1, Math.trunc(values.mediumBreakEveryPages)),
-      durationSeconds: Math.max(5, Math.trunc(values.mediumBreakSeconds)),
-      kind: 'short',
-    },
-    {
-      everyPages: Math.max(1, Math.trunc(values.longBreakEveryPages)),
-      durationSeconds: Math.max(5, Math.trunc(values.longBreakSeconds)),
-      kind: 'long',
-    },
-  ]
-
-  return tiers.sort((left, right) => right.everyPages - left.everyPages)
-}
-
-function buildTimeline(session: ActiveSession, locale: string): SessionTimelineEntry[] {
-  const items: Array<SessionTimelineEntry & { sortAtMs: number }> = [
-    {
-      id: `${session.sessionId}-start`,
-      title: 'Session started',
-      detail: 'You can keep logging pages and let the app handle the rest cues.',
-      timeLabel: formatTimeStamp(session.startedAtMs, locale),
-      tone: 'neutral',
-      sortAtMs: session.startedAtMs,
-    },
-  ]
-
-  for (const pageEvent of session.pageEvents) {
-    items.push({
-      id: `${session.sessionId}-page-${pageEvent.atMs}`,
-      title: `Logged ${formatPageLabel(pageEvent.deltaPages)}`,
-      detail: `Total progress: ${formatPageLabel(pageEvent.totalPages)}.`,
-      timeLabel: formatTimeStamp(pageEvent.atMs, locale),
-      tone: 'progress',
-      sortAtMs: pageEvent.atMs,
-    })
-  }
-
-  for (const breakEntry of session.breakLog) {
-    const stateLabel = breakEntry.skipped
-      ? 'Skipped once.'
-      : breakEntry.completedAtMs
-        ? 'Completed.'
-        : 'Active now.'
-    const snoozeLabel =
-      breakEntry.snoozeCount > 0 ? ` Snoozed ${breakEntry.snoozeCount}x.` : ''
-
-    items.push({
-      id: `${session.sessionId}-break-${breakEntry.triggeredAtMs}`,
-      title: formatBreakKind(breakEntry.kind),
-      detail: `Triggered at page ${breakEntry.triggerPage}. ${stateLabel}${snoozeLabel}`.trim(),
-      timeLabel: formatTimeStamp(
-        breakEntry.completedAtMs ?? breakEntry.triggeredAtMs,
-        locale,
-      ),
-      tone: 'rest',
-      sortAtMs: breakEntry.completedAtMs ?? breakEntry.triggeredAtMs,
-    })
-  }
-
-  if (session.status === 'paused') {
-    items.push({
-      id: `${session.sessionId}-paused-${session.updatedAtMs}`,
-      title: 'Session paused',
-      detail: 'Take a breath and return when the page feels manageable again.',
-      timeLabel: formatTimeStamp(session.updatedAtMs, locale),
-      tone: 'neutral',
-      sortAtMs: session.updatedAtMs,
-    })
-  }
-
-  return items
-    .sort((left, right) => right.sortAtMs - left.sortAtMs)
-    .slice(0, 8)
-    .map((item) => ({
-      id: item.id,
-      title: item.title,
-      detail: item.detail,
-      timeLabel: item.timeLabel,
-      tone: item.tone,
-    }))
-}
-
-function buildHistoryEntries(
-  entries: SessionHistoryEntry[],
-  locale: string,
-): HistoryEntryView[] {
-  return [...entries]
-    .sort((left, right) => right.startedAtMs - left.startedAtMs)
-    .map((entry) => ({
-      id: entry.sessionId,
-      dateLabel: formatSessionDate(entry.startedAtMs, locale),
-      timeRangeLabel: `${formatTimeStamp(entry.startedAtMs, locale)} to ${formatTimeStamp(entry.endedAtMs, locale)}`,
-      durationLabel: formatClockDuration((entry.endedAtMs - entry.startedAtMs) / 1000),
-      pagesCompleted: entry.totalPages,
-      breaksTaken: entry.breaksTaken,
-      snoozes: entry.snoozeCount,
-      skips: entry.skippedBreaks,
-      notes:
-        entry.skippedBreaks > 0
-          ? 'One or more break prompts were skipped before the session ended.'
-          : undefined,
-    }))
-}
-
-function buildSummaryLabel(
-  session: ActiveSession | null,
-  settings: TimerSettings,
-): string {
-  if (!session || session.status === 'idle') {
-    return `Default pace: ${formatClockDuration(settings.paceSecondsPerTwoPages)} for two pages.`
-  }
-
-  if (session.activeBreak) {
-    return `${formatBreakKind(session.activeBreak.kind)} underway.`
-  }
-
-  const nextBreak = getNextBreakHint(session.totalPages, settings.breakTiers)
-  if (!nextBreak) {
-    return `${formatPageLabel(session.totalPages)} logged.`
-  }
-
-  return `${formatBreakKind(nextBreak.kind)} at page ${nextBreak.triggerPage}.`
+function downloadJson(filename: string, value: unknown) {
+  const blob = new Blob([JSON.stringify(value, null, 2)], {
+    type: 'application/json',
+  })
+  const objectUrl = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = objectUrl
+  link.download = filename
+  link.click()
+  URL.revokeObjectURL(objectUrl)
 }
 
 function App() {
   const [repository] = useState(() => createLocalStorageRepository())
-  const [settings, setSettings] = useState<TimerSettings>(() =>
-    repository.getTimerSettings(),
-  )
+  const [hydrated, setHydrated] = useState(false)
+  const [settings, setSettings] = useState<TimerSettings>(() => buildResetSettings())
   const [activeSession, setActiveSession] = useState<ActiveSession | null>(null)
-  const [pendingResumeSession, setPendingResumeSession] =
-    useState<ActiveSession | null>(() => repository.getActiveSession())
-  const [historyEntries, setHistoryEntries] = useState<SessionHistoryEntry[]>(() =>
-    repository.getSessionHistory(),
-  )
-  const [surface, setSurface] = useState<SurfaceKey>('session')
+  const [pendingResumeSession, setPendingResumeSession] = useState<ActiveSession | null>(null)
+  const [historyEntries, setHistoryEntries] = useState<SessionHistoryEntry[]>([])
+  const [surface, setSurface] = useState<'session' | 'history' | 'settings'>('session')
   const [nowMs, setNowMs] = useState(() => Date.now())
   const [liveAnnouncement, setLiveAnnouncement] = useState('')
+  const [portabilityMessage, setPortabilityMessage] = useState<string | null>(null)
+  const [portabilityBusy, setPortabilityBusy] = useState(false)
   const lastBreakPromptRef = useRef<number | null>(null)
 
-  const strings = getStrings(settings.locale)
-  const currentSession = activeSession
-  const nextBreakHint = getNextBreakHint(currentSession?.totalPages ?? 0, settings.breakTiers)
-  const hybridNudge = currentSession
-    ? computeHybridNudge(currentSession, settings, nowMs)
-    : null
-  const historyView = buildHistoryEntries(historyEntries, settings.locale)
-  const timeline =
-    currentSession && currentSession.status !== 'idle'
-      ? buildTimeline(currentSession, settings.locale)
-      : []
-  const settingsFormValues = buildSettingsFormValues(settings)
-  const breakCountdownSeconds = currentSession?.activeBreak
-    ? Math.max(0, Math.ceil((currentSession.activeBreak.endsAtMs - nowMs) / 1000))
-    : 0
-  const nextBreakLabel = currentSession?.activeBreak
-    ? `${formatBreakKind(currentSession.activeBreak.kind)} now`
-    : nextBreakHint
-      ? `${formatBreakKind(nextBreakHint.kind)} at page ${nextBreakHint.triggerPage}`
-      : 'No break scheduled'
-  const estimatedToBreakLabel = currentSession?.activeBreak
-    ? 'Now'
-    : nextBreakHint
-      ? `~${formatClockDuration(
-          nextBreakHint.pagesUntilBreak * (settings.paceSecondsPerTwoPages / 2),
-        )}`
-      : '--'
+  useEffect(() => {
+    let cancelled = false
+
+    const load = async () => {
+      const snapshot = await repository.loadSnapshot()
+      if (cancelled) {
+        return
+      }
+
+      setSettings(snapshot.settings)
+      setPendingResumeSession(snapshot.activeSession)
+      setHistoryEntries(snapshot.historyEntries)
+      setHydrated(true)
+    }
+
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [repository])
 
   useEffect(() => {
-    repository.saveTimerSettings(settings)
-  }, [repository, settings])
-
-  useEffect(() => {
-    repository.saveSessionHistory(historyEntries)
-  }, [historyEntries, repository])
-
-  useEffect(() => {
-    if (settings.resumeOnReopen) {
-      repository.saveActiveSession(currentSession)
+    if (!hydrated) {
       return
     }
 
-    repository.saveActiveSession(null)
-  }, [currentSession, repository, settings.resumeOnReopen])
+    void repository.saveTimerSettings(settings)
+  }, [hydrated, repository, settings])
 
   useEffect(() => {
-    if (!currentSession || currentSession.status === 'idle') {
+    if (!hydrated) {
+      return
+    }
+
+    void repository.saveSessionHistory(historyEntries)
+  }, [hydrated, historyEntries, repository])
+
+  useEffect(() => {
+    if (!hydrated) {
+      return
+    }
+
+    if (settings.resumeOnReopen) {
+      void repository.saveActiveSession(activeSession)
+      return
+    }
+
+    void repository.saveActiveSession(null)
+  }, [activeSession, hydrated, repository, settings.resumeOnReopen])
+
+  useEffect(() => {
+    if (!activeSession || activeSession.status === 'idle') {
       return undefined
     }
 
@@ -315,23 +131,34 @@ function App() {
     return () => {
       window.clearInterval(intervalId)
     }
-  }, [currentSession])
+  }, [activeSession])
 
   useEffect(() => {
-    if (!currentSession?.activeBreak) {
+    if (!activeSession?.activeBreak) {
       return
     }
 
-    if (lastBreakPromptRef.current === currentSession.activeBreak.startedAtMs) {
+    if (lastBreakPromptRef.current === activeSession.activeBreak.startedAtMs) {
       return
     }
 
-    lastBreakPromptRef.current = currentSession.activeBreak.startedAtMs
-
+    lastBreakPromptRef.current = activeSession.activeBreak.startedAtMs
     if (settings.softChimeEnabled) {
       void playSoftChime()
     }
-  }, [currentSession?.activeBreak, settings.softChimeEnabled])
+  }, [activeSession?.activeBreak, settings.softChimeEnabled])
+
+  const strings = getStrings(settings.locale)
+  const timeline =
+    activeSession && activeSession.status !== 'idle'
+      ? buildTimeline(activeSession, settings.locale)
+      : []
+  const historyView = buildHistoryEntries(historyEntries, settings.locale)
+  const settingsValues = buildSettingsFormValues(settings)
+  const statusLabel = getStatusLabel(activeSession)
+  const nextBreakLabel = buildNextBreakLabel(activeSession, settings)
+  const estimatedToBreakLabel = buildEstimatedToBreakLabel(activeSession, settings)
+  const paceHint = buildPaceHint(activeSession, settings, nowMs)
 
   function handleStartSession() {
     setActiveSession(startSession(Date.now()))
@@ -341,73 +168,74 @@ function App() {
   }
 
   function handleAddPages(pages: number) {
-    if (!currentSession) {
+    if (!activeSession) {
       return
     }
 
-    setActiveSession(addPages(currentSession, pages, settings, Date.now()))
+    setActiveSession(addPages(activeSession, pages, settings, Date.now()))
   }
 
   function handleUndo() {
-    if (!currentSession) {
+    if (!activeSession) {
       return
     }
 
-    setActiveSession(undoLastPages(currentSession, settings, Date.now()))
+    setActiveSession(undoLastPages(activeSession, settings, Date.now()))
     setLiveAnnouncement('Undid the last page mark.')
   }
 
   function handlePauseToggle() {
-    if (!currentSession) {
+    if (!activeSession) {
       return
     }
 
-    if (currentSession.status === 'paused') {
-      setActiveSession(resumeSession(currentSession, settings, Date.now()))
+    if (activeSession.status === 'paused') {
+      setActiveSession(resumeSession(activeSession, settings, Date.now()))
       setLiveAnnouncement('Session resumed.')
       return
     }
 
-    setActiveSession(pauseSession(currentSession, Date.now()))
+    setActiveSession(pauseSession(activeSession, Date.now()))
     setLiveAnnouncement('Session paused.')
   }
 
   function handleResumeFromBreak() {
-    if (!currentSession) {
+    if (!activeSession) {
       return
     }
 
-    setActiveSession(resumeSession(currentSession, settings, Date.now()))
+    setActiveSession(resumeSession(activeSession, settings, Date.now()))
     setLiveAnnouncement('Break completed.')
   }
 
   function handleSnoozeBreak() {
-    if (!currentSession) {
+    if (!activeSession) {
       return
     }
 
-    setActiveSession(snoozeBreak(currentSession, 30, Date.now()))
+    setActiveSession(snoozeBreak(activeSession, 30, Date.now()))
     setLiveAnnouncement('Break snoozed for 30 seconds.')
   }
 
   function handleSkipBreak() {
-    if (!currentSession) {
+    if (!activeSession) {
       return
     }
 
-    setActiveSession(skipBreak(currentSession, settings, Date.now()))
+    setActiveSession(skipBreak(activeSession, settings, Date.now()))
     setLiveAnnouncement('Break skipped once.')
   }
 
   function handleEndSession() {
-    if (!currentSession) {
+    if (!activeSession) {
       return
     }
 
-    const result = endSession(currentSession, Date.now())
+    const result = endSession(activeSession, Date.now())
     if (result.historyEntry) {
       setHistoryEntries((entries) => [result.historyEntry as SessionHistoryEntry, ...entries])
     }
+
     setActiveSession(null)
     setSurface('history')
     setLiveAnnouncement('Session saved to history.')
@@ -426,12 +254,12 @@ function App() {
   }
 
   function handleDiscardSavedSession() {
-    repository.saveActiveSession(null)
     setPendingResumeSession(null)
+    void repository.saveActiveSession(null)
     setLiveAnnouncement('Saved session discarded.')
   }
 
-  function handleSettingsChange(nextValues: SettingsFormValues) {
+  function handleSettingsChange(nextValues: typeof settingsValues) {
     setSettings({
       ...settings,
       updatedAtMs: Date.now(),
@@ -447,14 +275,45 @@ function App() {
   }
 
   function handleResetSettings() {
-    setSettings(createDefaultTimerSettings(Date.now()))
+    setSettings(buildResetSettings(Date.now()))
     setLiveAnnouncement('Settings reset to defaults.')
   }
 
   function handleResetHistory() {
     setHistoryEntries([])
-    repository.resetHistory()
+    void repository.resetHistory()
     setLiveAnnouncement('History cleared.')
+  }
+
+  async function handleExportData() {
+    setPortabilityBusy(true)
+    try {
+      const payload = await repository.exportData()
+      downloadJson('quran-rest-coach-export.json', payload)
+      setPortabilityMessage('Exported your local Quran Rest Coach data.')
+    } finally {
+      setPortabilityBusy(false)
+    }
+  }
+
+  async function handleImportData(file: File) {
+    setPortabilityBusy(true)
+    try {
+      const contents = await file.text()
+      await repository.importData(contents)
+      const snapshot = await repository.loadSnapshot()
+      setSettings(snapshot.settings)
+      setActiveSession(null)
+      setPendingResumeSession(snapshot.activeSession)
+      setHistoryEntries(snapshot.historyEntries)
+      setPortabilityMessage('Imported data successfully.')
+    } catch (error) {
+      setPortabilityMessage(
+        error instanceof Error ? error.message : 'Import failed. Please try another file.',
+      )
+    } finally {
+      setPortabilityBusy(false)
+    }
   }
 
   const onGlobalKeyDown = useEffectEvent((event: KeyboardEvent) => {
@@ -463,7 +322,6 @@ function App() {
     }
 
     const key = event.key.toLowerCase()
-
     if (surface !== 'session') {
       if (key === 'h') {
         setSurface('history')
@@ -471,7 +329,7 @@ function App() {
       return
     }
 
-    if (!currentSession || currentSession.status === 'idle') {
+    if (!activeSession || activeSession.status === 'idle') {
       if (key === 's') {
         event.preventDefault()
         handleStartSession()
@@ -479,7 +337,7 @@ function App() {
       return
     }
 
-    if (currentSession.status === 'break') {
+    if (activeSession.status === 'break') {
       if (key === 'r') {
         event.preventDefault()
         handleResumeFromBreak()
@@ -535,146 +393,70 @@ function App() {
   }, [])
 
   return (
-    <div
-      className="coach-shell"
-      data-theme={getThemeMode(settings)}
-      data-large-text={settings.largeText ? 'true' : 'false'}
-      data-reduced-motion={settings.reducedMotion ? 'true' : 'false'}
-    >
-      <header className="coach-header">
-        <p className="coach-kicker">Local-first pacing</p>
-        <h1 className="coach-title">{strings.appTitle}</h1>
-        <p className="coach-subtitle">
-          A calm companion for Quran reading sessions that need page-based breaks,
-          soft prompts, and quick recovery when focus gets heavy.
-        </p>
-        <p className="coach-subtitle">{buildSummaryLabel(currentSession, settings)}</p>
-      </header>
-
-      <SurfaceTabs active={surface} onSelect={setSurface} />
-
-      {surface === 'session' ? (
-        <SessionSurface
-          canAddPage={currentSession?.status === 'reading'}
-          canAddTwoPages={currentSession?.status === 'reading'}
-          canEnd={Boolean(currentSession)}
-          canPause={Boolean(
-            currentSession &&
-              currentSession.status !== 'idle' &&
-              currentSession.status !== 'break',
-          )}
-          canStart={!currentSession || currentSession.status === 'idle'}
-          canUndo={Boolean(currentSession && currentSession.pageEvents.length > 0)}
-          estimatedToBreakLabel={estimatedToBreakLabel}
-          keyboardHints={[
-            { action: 'Start session', keyLabel: 'S' },
-            { action: 'Add one page', keyLabel: '1' },
-            { action: 'Add two pages', keyLabel: '2' },
-            { action: 'Undo last change', keyLabel: 'U' },
-            { action: 'Pause or resume', keyLabel: 'P' },
-            { action: 'End session', keyLabel: 'X' },
-          ]}
-          nextBreakLabel={nextBreakLabel}
-          onAddPage={() => handleAddPages(1)}
-          onAddTwoPages={() => handleAddPages(2)}
-          onEndSession={handleEndSession}
-          onPauseToggle={handlePauseToggle}
-          onStartSession={handleStartSession}
-          onUndo={handleUndo}
-          paceHint={hybridNudge?.message ?? null}
-          pageCount={currentSession?.totalPages ?? 0}
-          pauseLabel={currentSession?.status === 'paused' ? 'Resume' : 'Pause'}
-          status={(currentSession?.status ?? 'idle') as 'idle' | 'reading' | 'paused' | 'break'}
-          statusLabel={getStatusLabel(currentSession)}
-          timeline={timeline}
-        />
-      ) : null}
-
-      {surface === 'history' ? (
-        <HistorySurface entries={historyView} onResetHistory={handleResetHistory} />
-      ) : null}
-
-      {surface === 'settings' ? (
-        <SettingsSurface
-          onChange={handleSettingsChange}
-          onResetSettings={handleResetSettings}
-          values={settingsFormValues}
-        />
-      ) : null}
-
-      <BreakOverlay
-        breakReason={
-          currentSession?.activeBreak
-            ? `Page ${currentSession.activeBreak.triggerPage} reached. Use the countdown for a gentle reset.`
-            : ''
-        }
-        breakTitle={
-          currentSession?.activeBreak
-            ? formatBreakKind(currentSession.activeBreak.kind)
-            : ''
-        }
-        countdownSeconds={breakCountdownSeconds}
-        isOpen={Boolean(currentSession?.activeBreak)}
-        onResumeNow={handleResumeFromBreak}
-        onSkipOnce={handleSkipBreak}
-        onSnooze={handleSnoozeBreak}
-        suggestion={
-          currentSession?.activeBreak
-            ? BREAK_SUGGESTIONS[currentSession.activeBreak.kind]
-            : ''
-        }
-      />
-
-      {pendingResumeSession ? (
-        <div className="break-overlay-backdrop">
-          <section
-            className="break-overlay resume-overlay"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="resume-session-title"
-          >
-            <p className="surface-eyebrow">Saved locally</p>
-            <h2 id="resume-session-title" className="break-title">
-              Resume your last session?
-            </h2>
-            <p className="break-reason">
-              The previous session is still saved on this device. You can resume it or
-              discard it and start fresh.
-            </p>
-            <div className="resume-grid">
-              <div className="metric-card">
-                <p className="metric-label">Pages logged</p>
-                <p className="metric-value">{pendingResumeSession.totalPages}</p>
-              </div>
-              <div className="metric-card">
-                <p className="metric-label">Status</p>
-                <p className="metric-value">{getStatusLabel(pendingResumeSession)}</p>
-              </div>
-            </div>
-            <div className="break-actions">
-              <button
-                type="button"
-                className="action-btn action-btn-primary"
-                onClick={handleResumeSavedSession}
-              >
-                Resume saved session
-              </button>
-              <button
-                type="button"
-                className="action-btn action-btn-soft"
-                onClick={handleDiscardSavedSession}
-              >
-                Discard saved session
-              </button>
-            </div>
-          </section>
-        </div>
-      ) : null}
-
-      <div className="sr-only" aria-live="polite">
-        {liveAnnouncement}
-      </div>
-    </div>
+    <CoachDashboard
+      appTitle={strings.appTitle}
+      breakCountdownSeconds={
+        activeSession?.activeBreak
+          ? Math.max(0, Math.ceil((activeSession.activeBreak.endsAtMs - nowMs) / 1000))
+          : 0
+      }
+      breakOpen={Boolean(activeSession?.activeBreak)}
+      breakReason={
+        activeSession?.activeBreak
+          ? `Page ${activeSession.activeBreak.triggerPage} reached. Use the countdown for a gentle reset.`
+          : ''
+      }
+      breakSuggestion={
+        activeSession?.activeBreak ? BREAK_SUGGESTIONS[activeSession.activeBreak.kind] : ''
+      }
+      breakTitle={activeSession?.activeBreak ? formatBreakKind(activeSession.activeBreak.kind) : ''}
+      canAddPage={activeSession?.status === 'reading'}
+      canAddTwoPages={activeSession?.status === 'reading'}
+      canEnd={Boolean(activeSession)}
+      canPause={Boolean(
+        activeSession && activeSession.status !== 'idle' && activeSession.status !== 'break',
+      )}
+      canStart={!activeSession || activeSession.status === 'idle'}
+      canUndo={Boolean(activeSession && activeSession.pageEvents.length > 0)}
+      estimatedToBreakLabel={estimatedToBreakLabel}
+      historyEntries={historyView}
+      liveAnnouncement={liveAnnouncement}
+      mode="standalone"
+      nextBreakLabel={nextBreakLabel}
+      onAddPage={() => handleAddPages(1)}
+      onAddTwoPages={() => handleAddPages(2)}
+      onDiscardSavedSession={handleDiscardSavedSession}
+      onEndSession={handleEndSession}
+      onExportData={handleExportData}
+      onImportData={handleImportData}
+      onPauseToggle={handlePauseToggle}
+      onResetHistory={handleResetHistory}
+      onResetSettings={handleResetSettings}
+      onResumeNow={handleResumeFromBreak}
+      onResumeSavedSession={handleResumeSavedSession}
+      onSettingsChange={handleSettingsChange}
+      onSkipBreak={handleSkipBreak}
+      onSnoozeBreak={handleSnoozeBreak}
+      onStartSession={handleStartSession}
+      onSurfaceChange={setSurface}
+      onUndo={handleUndo}
+      paceHint={paceHint}
+      pageCount={activeSession?.totalPages ?? 0}
+      pauseLabel={activeSession?.status === 'paused' ? 'Resume' : 'Pause'}
+      pendingResumeSession={pendingResumeSession}
+      portabilityBusy={portabilityBusy}
+      portabilityMessage={portabilityMessage}
+      readerContext={null}
+      settings={settings}
+      settingsValues={settingsValues}
+      status={(activeSession?.status ?? 'idle') as 'idle' | 'reading' | 'paused' | 'break'}
+      statusLabel={statusLabel}
+      summaryLabel={buildSummaryLabel(activeSession, settings)}
+      surface={surface}
+      timeline={timeline}
+      trackingCopy="Use the local coach to manage pacing outside the Quran.com extension flow."
+      trackingLabel="Standalone mode"
+    />
   )
 }
 

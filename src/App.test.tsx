@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, beforeEach } from 'vitest'
 import App from './App'
@@ -23,7 +23,7 @@ describe('Quran Rest Coach app', () => {
 
   it('persists settings updates to local storage', async () => {
     const user = userEvent.setup()
-    const repository = createLocalStorageRepository(window.localStorage)
+    const repository = createLocalStorageRepository()
     render(<App />)
 
     await user.click(screen.getByRole('button', { name: /settings/i }))
@@ -31,16 +31,18 @@ describe('Quran Rest Coach app', () => {
     const paceInput = screen.getByLabelText(/default pace for 2 pages/i)
     fireEvent.change(paceInput, { target: { value: '150' } })
 
-    expect(repository.getTimerSettings().paceSecondsPerTwoPages).toBe(150)
+    await waitFor(async () => {
+      expect((await repository.getTimerSettings()).paceSecondsPerTwoPages).toBe(150)
+    })
   })
 
   it('offers resume or discard when a saved session exists', async () => {
-    const repository = createLocalStorageRepository(window.localStorage)
-    repository.saveActiveSession(startSession(1_763_100_000_000))
+    const repository = createLocalStorageRepository()
+    await repository.saveActiveSession(startSession(1_763_100_000_000))
 
     render(<App />)
 
-    expect(screen.getByRole('dialog', { name: /resume your last session/i })).toBeInTheDocument()
+    expect(await screen.findByRole('dialog', { name: /resume your last session/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /resume saved session/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /discard saved session/i })).toBeInTheDocument()
   })

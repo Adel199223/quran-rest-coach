@@ -21,6 +21,7 @@ export interface SessionSurfaceProps {
   canPause?: boolean
   canEnd?: boolean
   keyboardHints?: KeyboardHint[]
+  compact?: boolean
   onStartSession: () => void
   onAddPage: () => void
   onAddTwoPages: () => void
@@ -52,6 +53,7 @@ export function SessionSurface({
   canPause = true,
   canEnd = true,
   keyboardHints = DEFAULT_HINTS,
+  compact = false,
   onStartSession,
   onAddPage,
   onAddTwoPages,
@@ -147,43 +149,69 @@ export function SessionSurface({
         </button>
       </div>
 
-      <section className="timeline-section" aria-labelledby="timeline-heading">
-        <div className="timeline-heading-row">
-          <h3 id="timeline-heading" className="mini-heading">
-            Session timeline
-          </h3>
-          <span className="mini-note">Recent events</span>
-        </div>
-        {timeline.length === 0 ? (
-          <p className="empty-state">No session events yet.</p>
-        ) : (
-          <ol className="timeline-list">
-            {timeline.map((entry) => (
-              <li key={entry.id} className={`timeline-item tone-${entry.tone ?? 'neutral'}`}>
-                <div>
-                  <p className="timeline-title">{entry.title}</p>
-                  <p className="timeline-detail">{entry.detail}</p>
-                </div>
-                <span className="timeline-time">{entry.timeLabel}</span>
-              </li>
-            ))}
-          </ol>
-        )}
-      </section>
+      {compact ? (
+        <details className="timeline-section disclosure-panel">
+          <summary className="timeline-heading-row disclosure-trigger">
+            <span className="mini-heading">Session details</span>
+            <span className="mini-note">Timeline and quick review</span>
+          </summary>
+          {timeline.length === 0 ? (
+            <p className="empty-state">No session events yet.</p>
+          ) : (
+            <ol className="timeline-list">
+              {timeline.map((entry) => (
+                <li key={entry.id} className={`timeline-item tone-${entry.tone ?? 'neutral'}`}>
+                  <div>
+                    <p className="timeline-title">{entry.title}</p>
+                    <p className="timeline-detail">{entry.detail}</p>
+                  </div>
+                  <span className="timeline-time">{entry.timeLabel}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </details>
+      ) : (
+        <>
+          <section className="timeline-section" aria-labelledby="timeline-heading">
+            <div className="timeline-heading-row">
+              <h3 id="timeline-heading" className="mini-heading">
+                Session timeline
+              </h3>
+              <span className="mini-note">Recent events</span>
+            </div>
+            {timeline.length === 0 ? (
+              <p className="empty-state">No session events yet.</p>
+            ) : (
+              <ol className="timeline-list">
+                {timeline.map((entry) => (
+                  <li key={entry.id} className={`timeline-item tone-${entry.tone ?? 'neutral'}`}>
+                    <div>
+                      <p className="timeline-title">{entry.title}</p>
+                      <p className="timeline-detail">{entry.detail}</p>
+                    </div>
+                    <span className="timeline-time">{entry.timeLabel}</span>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
 
-      <section className="keyboard-hints" aria-labelledby="hint-heading">
-        <h3 id="hint-heading" className="mini-heading">
-          Keyboard shortcuts
-        </h3>
-        <ul className="hint-list">
-          {keyboardHints.map((hint) => (
-            <li key={`${hint.action}-${hint.keyLabel}`} className="hint-item">
-              <span>{hint.action}</span>
-              <kbd>{hint.keyLabel}</kbd>
-            </li>
-          ))}
-        </ul>
-      </section>
+          <section className="keyboard-hints" aria-labelledby="hint-heading">
+            <h3 id="hint-heading" className="mini-heading">
+              Keyboard shortcuts
+            </h3>
+            <ul className="hint-list">
+              {keyboardHints.map((hint) => (
+                <li key={`${hint.action}-${hint.keyLabel}`} className="hint-item">
+                  <span>{hint.action}</span>
+                  <kbd>{hint.keyLabel}</kbd>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </>
+      )}
     </section>
   )
 }

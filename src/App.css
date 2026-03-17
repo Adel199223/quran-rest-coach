@@ -145,6 +145,59 @@
   animation: panel-enter 340ms cubic-bezier(0.21, 0.74, 0.23, 1);
 }
 
+.reader-context-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 1.25rem;
+  box-shadow: var(--panel-shadow);
+  padding: 1rem 1.05rem;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.reader-context-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
+.reader-context-badge {
+  border-radius: 999px;
+  border: 1px solid var(--accent-soft);
+  background: var(--accent-subtle);
+  color: var(--accent-strong);
+  padding: 0.35rem 0.6rem;
+  font-size: 0.78rem;
+  font-weight: 760;
+  white-space: nowrap;
+}
+
+.reader-context-copy {
+  margin: 0;
+  color: var(--ink-muted);
+}
+
+.reader-context-grid {
+  margin: 0;
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.reader-context-grid dt {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+}
+
+.reader-context-grid dd {
+  margin: 0.12rem 0 0;
+  color: var(--ink-strong);
+  font-size: 0.98rem;
+  font-weight: 760;
+}
+
 .surface-header {
   display: grid;
   gap: 0.36rem;
@@ -352,6 +405,18 @@
   align-self: start;
 }
 
+.disclosure-panel summary {
+  list-style: none;
+}
+
+.disclosure-panel summary::-webkit-details-marker {
+  display: none;
+}
+
+.disclosure-trigger {
+  cursor: pointer;
+}
+
 .hint-list {
   margin: 0;
   padding: 0;
@@ -535,6 +600,14 @@ kbd {
   justify-content: flex-end;
 }
 
+.data-transfer-panel {
+  gap: 0.9rem;
+}
+
+.data-transfer-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .break-overlay-backdrop {
   position: fixed;
   inset: 0;
@@ -625,6 +698,10 @@ kbd {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .reader-context-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .history-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -645,6 +722,7 @@ kbd {
   }
 
   .session-metrics,
+  .reader-context-grid,
   .session-actions,
   .break-actions,
   .history-grid,
@@ -680,4 +758,22 @@ kbd {
   animation-iteration-count: 1 !important;
   transition-duration: 0.001ms !important;
   scroll-behavior: auto !important;
+}
+
+.coach-shell[data-layout='extension'] {
+  gap: 0.85rem;
+  padding: 0.85rem;
+}
+
+.coach-shell[data-layout='extension'] .coach-header {
+  padding: 1rem 1.05rem;
+}
+
+.coach-shell[data-layout='extension'] .surface-panel,
+.coach-shell[data-layout='extension'] .reader-context-card {
+  border-radius: 1rem;
+}
+
+.coach-shell[data-layout='extension'] .coach-title {
+  font-size: clamp(1.55rem, 5vw, 2rem);
 }

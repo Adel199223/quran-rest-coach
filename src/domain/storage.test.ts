@@ -7,64 +7,72 @@ import { LocalStorageRepository, type StorageAdapter } from '../lib/storage'
 class MemoryStorageAdapter implements StorageAdapter {
   private readonly map = new Map<string, string>()
 
-  public getItem(key: string): string | null {
+  public async getItem(key: string): Promise<string | null> {
     return this.map.get(key) ?? null
   }
 
-  public setItem(key: string, value: string): void {
+  public async setItem(key: string, value: string): Promise<void> {
     this.map.set(key, value)
   }
 
-  public removeItem(key: string): void {
+  public async removeItem(key: string): Promise<void> {
     this.map.delete(key)
   }
 }
 
 describe('local storage repository', () => {
-  it('returns defaults when storage is empty', () => {
+  it('returns defaults when storage is empty', async () => {
     const repo = new LocalStorageRepository(new MemoryStorageAdapter())
-    const settings = repo.getTimerSettings()
+    const settings = await repo.getTimerSettings()
     expect(settings.paceSecondsPerTwoPages).toBe(130)
-    expect(repo.getActiveSession()).toBeNull()
-    expect(repo.getSessionHistory()).toEqual([])
+    await expect(repo.getActiveSession()).resolves.toBeNull()
+    await expect(repo.getSessionHistory()).resolves.toEqual([])
   })
 
-  it('saves and loads settings', () => {
+  it('saves and loads settings', async () => {
     const repo = new LocalStorageRepository(new MemoryStorageAdapter())
     const settings = createDefaultTimerSettings(500)
     settings.paceSecondsPerTwoPages = 140
-    repo.saveTimerSettings(settings)
+    await repo.saveTimerSettings(settings)
 
-    const loaded = repo.getTimerSettings()
+    const loaded = await repo.getTimerSettings()
     expect(loaded.paceSecondsPerTwoPages).toBe(140)
     expect(loaded.schemaVersion).toBe(1)
   })
 
-  it('saves active session and appends history entries', () => {
+  it('saves active session and appends history entries', async () => {
     const repo = new LocalStorageRepository(new MemoryStorageAdapter())
     const session = startSession(0)
-    repo.saveActiveSession(session)
-    expect(repo.getActiveSession()?.sessionId).toBe(session.sessionId)
+    await repo.saveActiveSession(session)
+    expect((await repo.getActiveSession())?.sessionId).toBe(session.sessionId)
 
     const ended = endSession(session, 3000)
     if (!ended.historyEntry) {
       throw new Error('Expected history entry to be created')
     }
-    const entries = repo.appendSessionHistory(ended.historyEntry)
+    const entries = await repo.appendSessionHistory(ended.historyEntry)
     expect(entries).toHaveLength(1)
-    expect(repo.getSessionHistory()).toHaveLength(1)
+    await expect(repo.getSessionHistory()).resolves.toHaveLength(1)
   })
 
-  it('resets history and settings independently', () => {
+  it('resets history and settings independently', async () => {
     const repo = new LocalStorageRepository(new MemoryStorageAdapter())
     const settings = createDefaultTimerSettings(100)
-    repo.saveTimerSettings(settings)
-    repo.saveSessionHistory([])
-    repo.resetHistory()
-    expect(repo.getSessionHistory()).toEqual([])
+    await repo.saveTimerSettings(settings)
+    await repo.saveSessionHistory([])
+    await repo.resetHistory()
+    await expect(repo.getSessionHistory()).resolves.toEqual([])
 
-    repo.resetSettings()
-    const loaded = repo.getTimerSettings()
+    await repo.resetSettings()
+    const loaded = await repo.getTimerSettings()
     expect(loaded.paceSecondsPerTwoPages).toBe(130)
+  })
+
+  it('rejects invalid import payloads', async () => {
+    const repo = new LocalStorageRepository(new MemoryStorageAdapter())
+
+    await expect(repo.importData('{"invalid":true}')).rejects.toThrow(
+      /invalid quran rest coach export file/i,
+    )
   })
 })

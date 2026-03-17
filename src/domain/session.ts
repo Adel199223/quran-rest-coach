@@ -4,6 +4,7 @@ import {
   type ActiveBreakState,
   type ActiveSession,
   type BreakLogEntry,
+  type ObservedReaderPage,
   type SessionHistoryEntry,
   type TimerSettings,
 } from './contracts'
@@ -54,51 +55,19 @@ function updateLatestBreakLog(
   return next
 }
 
-export function createActiveSession(nowMs = Date.now()): ActiveSession {
-  return {
-    schemaVersion: ACTIVE_SESSION_SCHEMA_VERSION,
-    sessionId: createSessionId(nowMs),
-    status: 'reading',
-    startedAtMs: nowMs,
-    updatedAtMs: nowMs,
-    endedAtMs: null,
-    totalPages: 0,
-    pageEvents: [],
-    lastPageLoggedAtMs: null,
-    activeBreak: null,
-    breakLog: [],
-    breaksTaken: 0,
-    snoozeCount: 0,
-    skippedBreaks: 0,
-    hybridNudge: null,
-  }
-}
-
-export function startSession(nowMs = Date.now()): ActiveSession {
-  return createActiveSession(nowMs)
-}
-
-export function addPages(
+function applyPageProgress(
   session: ActiveSession,
-  pagesToAdd: number,
+  deltaPages: number,
   settings: TimerSettings,
-  nowMs = Date.now(),
+  nowMs: number,
+  pageEvent: ActiveSession['pageEvents'][number],
+  observedPages = session.observedPages,
 ): ActiveSession {
-  if (session.status !== 'reading') {
-    return withHybridNudge(cloneWithUpdate(session, {}, nowMs), settings, nowMs)
-  }
-
-  const deltaPages = Math.trunc(pagesToAdd)
-  if (deltaPages <= 0) {
-    return withHybridNudge(cloneWithUpdate(session, {}, nowMs), settings, nowMs)
-  }
-
   const totalPages = session.totalPages + deltaPages
   const pageEvents = [
     ...session.pageEvents,
     {
-      atMs: nowMs,
-      deltaPages,
+      ...pageEvent,
       totalPages,
     },
   ]
@@ -112,6 +81,7 @@ export function addPages(
           totalPages,
           pageEvents,
           lastPageLoggedAtMs: nowMs,
+          observedPages,
         },
         nowMs,
       ),
@@ -151,8 +121,107 @@ export function addPages(
       activeBreak,
       breakLog: [...session.breakLog, breakLogEntry],
       hybridNudge: null,
+      observedPages,
     },
     nowMs,
+  )
+}
+
+export function createActiveSession(nowMs = Date.now()): ActiveSession {
+  return {
+    schemaVersion: ACTIVE_SESSION_SCHEMA_VERSION,
+    sessionId: createSessionId(nowMs),
+    status: 'reading',
+    startedAtMs: nowMs,
+    updatedAtMs: nowMs,
+    endedAtMs: null,
+    totalPages: 0,
+    pageEvents: [],
+    lastPageLoggedAtMs: null,
+    activeBreak: null,
+    breakLog: [],
+    breaksTaken: 0,
+    snoozeCount: 0,
+    skippedBreaks: 0,
+    hybridNudge: null,
+    observedPages: [],
+  }
+}
+
+export function startSession(nowMs = Date.now()): ActiveSession {
+  return createActiveSession(nowMs)
+}
+
+export function addPages(
+  session: ActiveSession,
+  pagesToAdd: number,
+  settings: TimerSettings,
+  nowMs = Date.now(),
+): ActiveSession {
+  if (session.status !== 'reading') {
+    return withHybridNudge(cloneWithUpdate(session, {}, nowMs), settings, nowMs)
+  }
+
+  const deltaPages = Math.trunc(pagesToAdd)
+  if (deltaPages <= 0) {
+    return withHybridNudge(cloneWithUpdate(session, {}, nowMs), settings, nowMs)
+  }
+
+  return applyPageProgress(
+    session,
+    deltaPages,
+    settings,
+    nowMs,
+    {
+      atMs: nowMs,
+      deltaPages,
+      totalPages: session.totalPages + deltaPages,
+      source: 'manual',
+      readerPageNumber: null,
+      readerVerseKey: null,
+    },
+  )
+}
+
+export function observeReaderPage(
+  session: ActiveSession,
+  observation: ObservedReaderPage,
+  settings: TimerSettings,
+  nowMs = observation.observedAtMs,
+): ActiveSession {
+  if (session.status !== 'reading') {
+    return withHybridNudge(cloneWithUpdate(session, {}, nowMs), settings, nowMs)
+  }
+
+  const pageNumber = Math.trunc(observation.pageNumber)
+  if (pageNumber <= 0) {
+    return withHybridNudge(cloneWithUpdate(session, {}, nowMs), settings, nowMs)
+  }
+
+  if (session.observedPages.some((entry) => entry.pageNumber === pageNumber)) {
+    return withHybridNudge(cloneWithUpdate(session, {}, nowMs), settings, nowMs)
+  }
+
+  const normalizedObservation: ObservedReaderPage = {
+    ...observation,
+    pageNumber,
+    observedAtMs: nowMs,
+  }
+
+  return applyPageProgress(
+    session,
+    1,
+    settings,
+    nowMs,
+    {
+      atMs: nowMs,
+      deltaPages: 1,
+      totalPages: session.totalPages + 1,
+      source: 'auto',
+      readerPageNumber: pageNumber,
+      readerVerseKey: normalizedObservation.verseKey,
+    },
+    [...session.observedPages, normalizedObservation],
   )
 }
 
@@ -169,6 +238,12 @@ export function undoLastPages(
   const pageEvents = session.pageEvents.slice(0, -1)
   const totalPages = pageEvents.length === 0 ? 0 : pageEvents[pageEvents.length - 1].totalPages
   const lastPageLoggedAtMs = pageEvents.length === 0 ? null : pageEvents[pageEvents.length - 1].atMs
+  const observedPages =
+    removedEvent.source === 'auto' && removedEvent.readerPageNumber !== null
+      ? session.observedPages.filter(
+          (entry) => entry.pageNumber !== removedEvent.readerPageNumber,
+        )
+      : session.observedPages
 
   let activeBreak = session.activeBreak
   let breakLog = session.breakLog
@@ -191,6 +266,7 @@ export function undoLastPages(
       activeBreak,
       breakLog,
       status,
+      observedPages,
     },
     nowMs,
   )
@@ -381,6 +457,7 @@ function toHistoryEntry(session: ActiveSession, endedAtMs: number): SessionHisto
     snoozeCount: session.snoozeCount,
     skippedBreaks: session.skippedBreaks,
     breakLog: session.breakLog,
+    observedPages: session.observedPages,
   }
 }
 

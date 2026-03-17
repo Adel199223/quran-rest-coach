@@ -36,6 +36,12 @@ Canonical local URL:
 
 `http://127.0.0.1:4173`
 
+Validation split:
+
+- `npm run validate:ui` is the trusted standalone-app browser harness
+- `npm run build` validates that the extension bundle can be packaged into `dist/extension`
+- `npm run validate:extension` is the trusted live Quran.com extension smoke harness
+
 ## Approval Gates
 
 Ask before executing:
@@ -62,11 +68,11 @@ Ask before executing:
 
 - App architecture or current-state truth: `APP_KNOWLEDGE.md`
 - Assistant bridge summary: `docs/assistant/APP_KNOWLEDGE.md`
-- Local storage contracts, keys, and schema-safe changes: `docs/assistant/LOCAL_PERSISTENCE_KNOWLEDGE.md`
-- Session logic and break behavior work: `docs/assistant/workflows/READING_SESSION_WORKFLOW.md`
-- UI/browser validation and artifact capture: `docs/assistant/workflows/UI_SURFACE_VALIDATION_WORKFLOW.md`
+- Local-first storage contracts, adapters, keys, and portability: `docs/assistant/LOCAL_PERSISTENCE_KNOWLEDGE.md`
+- Session logic, Quran.com tracking, break behavior, and correction rules: `docs/assistant/workflows/READING_SESSION_WORKFLOW.md`
+- Standalone and extension UI validation, build packaging, and artifact capture: `docs/assistant/workflows/UI_SURFACE_VALIDATION_WORKFLOW.md`
 - Named-product inspiration or parity work: `docs/assistant/workflows/REFERENCE_DISCOVERY_WORKFLOW.md`
-- Commit, branch, and repo hygiene: `docs/assistant/workflows/COMMIT_PUBLISH_WORKFLOW.md`
+- Commit, branch, worktree, push, and publish hygiene: `docs/assistant/workflows/COMMIT_PUBLISH_WORKFLOW.md`
 - Docs updates and user-guide sync: `docs/assistant/workflows/DOCS_MAINTENANCE_WORKFLOW.md`
 - Support and non-technical explanation work: `docs/assistant/features/APP_USER_GUIDE.md`
 - Reading-session coaching or walkthroughs: `docs/assistant/features/READING_SESSION_USER_GUIDE.md`
