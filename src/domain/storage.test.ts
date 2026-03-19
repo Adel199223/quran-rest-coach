@@ -37,7 +37,11 @@ describe('local storage repository', () => {
 
     const loaded = await repo.getTimerSettings()
     expect(loaded.paceSecondsPerTwoPages).toBe(140)
-    expect(loaded.schemaVersion).toBe(1)
+    expect(loaded.showRestCountdown).toBe(true)
+    expect(loaded.readingPressureMode).toBe(true)
+    expect(loaded.preStartCountdownSeconds).toBe(10)
+    expect(loaded.preStartWarningCueEnabled).toBe(true)
+    expect(loaded.schemaVersion).toBe(7)
   })
 
   it('saves active session and appends history entries', async () => {

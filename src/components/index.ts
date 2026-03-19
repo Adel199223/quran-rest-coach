@@ -13,9 +13,16 @@ export type { SettingsSurfaceProps } from './SettingsSurface'
 export { SurfaceTabs } from './SurfaceTabs'
 export type { SurfaceTabsProps } from './SurfaceTabs'
 export type {
+  CompletedSessionSummaryView,
   HistoryEntryView,
+  PendingStartView,
+  ReadingPressureCue,
+  ReadingPressureMode,
+  ReadingPressurePhase,
+  ReadingIntentOptionView,
   SessionStatus,
   SessionTimelineEntry,
   SettingsFormValues,
+  StudyLaterItemView,
   SurfaceKey,
 } from './types'

@@ -95,15 +95,22 @@ export async function sendExtensionMessage(
   }
 
   return new Promise((resolve) => {
-    runtime.sendMessage?.(message, (response) => {
-      const errorMessage = runtime.lastError?.message
-      if (errorMessage) {
-        resolve({ ok: false, error: errorMessage })
-        return
-      }
+    try {
+      runtime.sendMessage?.(message, (response) => {
+        const errorMessage = runtime.lastError?.message
+        if (errorMessage) {
+          resolve({ ok: false, error: errorMessage })
+          return
+        }
 
-      resolve(response ?? { ok: true })
-    })
+        resolve(response ?? { ok: true })
+      })
+    } catch (error) {
+      resolve({
+        ok: false,
+        error: error instanceof Error ? error.message : 'Extension runtime is unavailable.',
+      })
+    }
   })
 }
 

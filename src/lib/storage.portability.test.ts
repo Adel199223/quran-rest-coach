@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { createDefaultTimerSettings } from '../domain/settings'
 import { endSession, observeReaderPage, startSession } from '../domain/session'
-import type { ObservedReaderPage } from '../domain/contracts'
+import type { ObservedReaderPage, StudyLaterItem } from '../domain/contracts'
 import { LocalStorageRepository, type StorageAdapter } from './storage'
 
 class MemoryStorageAdapter implements StorageAdapter {
@@ -36,6 +36,9 @@ describe('storage portability', () => {
   it('exports and imports settings, active sessions, and history entries as JSON', async () => {
     const settings = createDefaultTimerSettings(100)
     settings.paceSecondsPerTwoPages = 150
+    settings.readingPressureMode = true
+    settings.preStartCountdownSeconds = 8
+    settings.preStartWarningCueEnabled = false
 
     const activeSession = observeReaderPage(
       startSession(0),
@@ -55,22 +58,42 @@ describe('storage portability', () => {
       throw new Error('Expected a history entry for the completed session.')
     }
 
+    const studyLaterItem: StudyLaterItem = {
+      schemaVersion: 1,
+      id: 'study_2_5',
+      savedAtMs: 4_000,
+      sessionId: completedSession.sessionId,
+      readingIntent: 'flow',
+      routeKind: 'surah',
+      url: 'https://quran.com/2/5',
+      chapterId: '2',
+      verseKey: '2:5',
+      pageNumber: 1,
+      hizbNumber: 1,
+    }
+
     const sourceRepository = new LocalStorageRepository(new MemoryStorageAdapter())
     await sourceRepository.saveTimerSettings(settings)
     await sourceRepository.saveActiveSession(activeSession)
     await sourceRepository.saveSessionHistory([result.historyEntry])
+    await sourceRepository.saveStudyLaterItems([studyLaterItem])
 
     const exported = await sourceRepository.exportData(6_000)
     expect(exported.exportedAtMs).toBe(6_000)
     expect(exported.activeSession?.observedPages[0]?.pageNumber).toBe(12)
     expect(exported.historyEntries[0]?.observedPages[0]?.pageNumber).toBe(5)
+    expect(exported.studyLaterItems[0]?.verseKey).toBe('2:5')
 
     const importedRepository = new LocalStorageRepository(new MemoryStorageAdapter())
     await importedRepository.importData(JSON.stringify(exported))
 
     const snapshot = await importedRepository.loadSnapshot()
     expect(snapshot.settings.paceSecondsPerTwoPages).toBe(150)
+    expect(snapshot.settings.readingPressureMode).toBe(true)
+    expect(snapshot.settings.preStartCountdownSeconds).toBe(8)
+    expect(snapshot.settings.preStartWarningCueEnabled).toBe(false)
     expect(snapshot.activeSession?.observedPages.map((entry) => entry.pageNumber)).toEqual([12])
     expect(snapshot.historyEntries[0]?.observedPages.map((entry) => entry.pageNumber)).toEqual([5])
+    expect(snapshot.studyLaterItems[0]?.url).toBe('https://quran.com/2/5')
   })
 })

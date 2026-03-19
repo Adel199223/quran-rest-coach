@@ -6,6 +6,7 @@ import {
   isBreakTier,
   isObjectLike,
 } from './contracts'
+import { DEFAULT_PRE_START_COUNTDOWN_SECONDS, normalizePreStartCountdownSeconds } from '../app/pendingStart'
 
 export const DEFAULT_PACE_SECONDS_PER_TWO_PAGES = 130
 
@@ -46,7 +47,14 @@ export function createDefaultTimerSettings(nowMs = Date.now()): TimerSettings {
     updatedAtMs: nowMs,
     paceSecondsPerTwoPages: DEFAULT_PACE_SECONDS_PER_TWO_PAGES,
     breakTiers: normalizeBreakTiers(DEFAULT_BREAK_TIERS),
+    showBetweenBreakCountdown: true,
+    readingPressureMode: true,
+    deadlineWarningCueEnabled: true,
+    showRestCountdown: true,
     softChimeEnabled: true,
+    preStartCountdownSeconds: DEFAULT_PRE_START_COUNTDOWN_SECONDS,
+    preStartWarningCueEnabled: true,
+    simplifiedReadingPanel: true,
     reducedMotion: false,
     largeText: true,
     highContrast: false,
@@ -77,10 +85,35 @@ export function normalizeTimerSettings(
     updatedAtMs: nowMs,
     paceSecondsPerTwoPages,
     breakTiers: normalizeBreakTiers(value.breakTiers),
+    showBetweenBreakCountdown:
+      typeof value.showBetweenBreakCountdown === 'boolean'
+        ? value.showBetweenBreakCountdown
+        : defaults.showBetweenBreakCountdown,
+    readingPressureMode:
+      typeof value.readingPressureMode === 'boolean'
+        ? value.readingPressureMode
+        : defaults.readingPressureMode,
+    deadlineWarningCueEnabled:
+      typeof value.deadlineWarningCueEnabled === 'boolean'
+        ? value.deadlineWarningCueEnabled
+        : defaults.deadlineWarningCueEnabled,
+    showRestCountdown:
+      typeof value.showRestCountdown === 'boolean'
+        ? value.showRestCountdown
+        : defaults.showRestCountdown,
     softChimeEnabled:
       typeof value.softChimeEnabled === 'boolean'
         ? value.softChimeEnabled
         : defaults.softChimeEnabled,
+    preStartCountdownSeconds: normalizePreStartCountdownSeconds(value.preStartCountdownSeconds),
+    preStartWarningCueEnabled:
+      typeof value.preStartWarningCueEnabled === 'boolean'
+        ? value.preStartWarningCueEnabled
+        : defaults.preStartWarningCueEnabled,
+    simplifiedReadingPanel:
+      typeof value.simplifiedReadingPanel === 'boolean'
+        ? value.simplifiedReadingPanel
+        : defaults.simplifiedReadingPanel,
     reducedMotion:
       typeof value.reducedMotion === 'boolean'
         ? value.reducedMotion

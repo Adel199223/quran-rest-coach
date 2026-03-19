@@ -48,3 +48,27 @@ export async function playSoftChime(options: SoftChimeOptions = {}): Promise<voi
     }
   })
 }
+
+export function playPreStartWarningCue(): Promise<void> {
+  return playSoftChime({
+    volume: 0.045,
+    frequencyHz: 520,
+    durationMs: 180,
+  })
+}
+
+export function playPreStartStartCue(): Promise<void> {
+  return playSoftChime({
+    volume: 0.055,
+    frequencyHz: 640,
+    durationMs: 140,
+  })
+}
+
+export function playDeadlineWarningCue(): Promise<void> {
+  return playSoftChime({
+    volume: 0.04,
+    frequencyHz: 560,
+    durationMs: 160,
+  })
+}

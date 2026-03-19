@@ -1,4 +1,5 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
+import { createDefaultTimerSettings } from '../domain/settings'
 import type { CoachSnapshot } from '../lib/storage'
 import { LocalStorageRepository } from '../lib/storage'
 import { ContentCompanion } from './ContentCompanion'
@@ -8,6 +9,7 @@ import {
   collectObservedReaderPages,
   enrichReaderContext,
   extractObservedReaderPageFromElement,
+  findPrimaryObservedReaderPage,
   parseReaderContextFromUrl,
 } from './quranContext'
 
@@ -15,26 +17,11 @@ const repository = new LocalStorageRepository(new ChromeStorageAdapter())
 
 function createEmptySnapshot(): CoachSnapshot {
   return {
-    settings: {
-      schemaVersion: 1,
-      updatedAtMs: Date.now(),
-      paceSecondsPerTwoPages: 130,
-      breakTiers: [
-        { everyPages: 10, durationSeconds: 120, kind: 'long' },
-        { everyPages: 5, durationSeconds: 60, kind: 'short' },
-        { everyPages: 2, durationSeconds: 15, kind: 'micro' },
-      ],
-      softChimeEnabled: true,
-      reducedMotion: false,
-      largeText: true,
-      highContrast: false,
-      sepiaTheme: true,
-      resumeOnReopen: true,
-      locale: 'en',
-    },
+    settings: createDefaultTimerSettings(Date.now()),
     activeSession: null,
     historyEntries: [],
     readerContext: null,
+    studyLaterItems: [],
   }
 }
 
@@ -43,11 +30,13 @@ export function CompanionRuntime() {
   const [localContext, setLocalContext] = useState(() =>
     parseReaderContextFromUrl(window.location.href),
   )
+  const [sidePanelOpen, setSidePanelOpen] = useState(false)
   const observerRef = useRef<IntersectionObserver | null>(null)
   const sentPagesRef = useRef<Set<number>>(new Set())
   const currentSessionIdRef = useRef<string | null>(null)
   const lastContextRef = useRef('')
   const lastUrlRef = useRef(window.location.href)
+  const activeSession = snapshot.activeSession
 
   useEffect(() => {
     let cancelled = false
@@ -67,6 +56,48 @@ export function CompanionRuntime() {
     return () => {
       cancelled = true
       unsubscribe()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!activeSession || activeSession.status === 'idle') {
+      return undefined
+    }
+
+    const intervalId = window.setInterval(() => {
+      void sendExtensionMessage({
+        kind: 'session-command',
+        command: { type: 'tick-session' },
+      })
+    }, 1000)
+
+    return () => {
+      window.clearInterval(intervalId)
+    }
+  }, [activeSession])
+
+  useEffect(() => {
+    let cancelled = false
+
+    const syncSidePanelVisibility = async () => {
+      const result = await sendExtensionMessage({
+        kind: 'session-command',
+        command: { type: 'get-side-panel-visibility' },
+      })
+
+      if (!cancelled && result.ok) {
+        setSidePanelOpen(Boolean(result.panelOpen))
+      }
+    }
+
+    void syncSidePanelVisibility()
+    const intervalId = window.setInterval(() => {
+      void syncSidePanelVisibility()
+    }, 1000)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(intervalId)
     }
   }, [])
 
@@ -113,10 +144,13 @@ export function CompanionRuntime() {
   })
 
   const syncReaderContext = useEffectEvent(() => {
-    const observations = collectObservedReaderPages(document, Date.now())
+    const nowMs = Date.now()
+    const observations = collectObservedReaderPages(document, nowMs)
+    const primaryObservation = findPrimaryObservedReaderPage(document, nowMs)
     const nextContext = enrichReaderContext(
-      parseReaderContextFromUrl(window.location.href),
+      parseReaderContextFromUrl(window.location.href, nowMs),
       observations,
+      primaryObservation,
     )
     const serialized = JSON.stringify(nextContext)
     setLocalContext(nextContext)
@@ -131,7 +165,7 @@ export function CompanionRuntime() {
 
     bindObserver()
 
-    if (snapshot.activeSession?.status === 'reading') {
+    if (activeSession?.status === 'reading') {
       const viewportHeight = window.innerHeight || document.documentElement.clientHeight
       for (const element of document.querySelectorAll('[data-page][data-verse-key], [data-page][data-chapter-id]')) {
         const rect = element.getBoundingClientRect()
@@ -143,12 +177,12 @@ export function CompanionRuntime() {
   })
 
   useEffect(() => {
-    if (snapshot.activeSession?.sessionId !== currentSessionIdRef.current) {
-      currentSessionIdRef.current = snapshot.activeSession?.sessionId ?? null
+    if (activeSession?.sessionId !== currentSessionIdRef.current) {
+      currentSessionIdRef.current = activeSession?.sessionId ?? null
       sentPagesRef.current = new Set()
       syncReaderContext()
     }
-  }, [snapshot.activeSession?.sessionId])
+  }, [activeSession?.sessionId])
 
   useEffect(() => {
     syncReaderContext()
@@ -184,7 +218,7 @@ export function CompanionRuntime() {
 
   return (
     <ContentCompanion
-      activeSession={snapshot.activeSession}
+      activeSession={activeSession}
       onOpenPanel={() => {
         void sendExtensionMessage({
           kind: 'session-command',
@@ -211,6 +245,7 @@ export function CompanionRuntime() {
       }}
       readerContext={readerContext}
       settings={snapshot.settings}
+      suppressExpandedPrompt={sidePanelOpen}
     />
   )
 }

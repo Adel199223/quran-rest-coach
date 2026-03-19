@@ -190,18 +190,84 @@ export function collectObservedReaderPages(
   return collected.sort((left, right) => left.pageNumber - right.pageNumber)
 }
 
+export function findPrimaryObservedReaderPage(
+  root: ParentNode = document,
+  nowMs = Date.now(),
+): ObservedReaderPage | null {
+  const viewportHeight =
+    typeof window !== 'undefined'
+      ? window.innerHeight || document.documentElement.clientHeight
+      : 0
+
+  const candidates: Array<{
+    observation: ObservedReaderPage
+    intersectsViewport: boolean
+    visibleHeight: number
+    centerDistance: number
+  }> = []
+
+  for (const selector of READER_CONTAINER_SELECTORS) {
+    const matches = root.querySelectorAll(selector)
+    for (const match of matches) {
+      const observation = extractObservedReaderPageFromElement(match, nowMs)
+      if (!observation) {
+        continue
+      }
+
+      const rect = match.getBoundingClientRect()
+      const intersectsViewport =
+        viewportHeight > 0 && rect.bottom > 0 && rect.top < viewportHeight
+      const visibleHeight = intersectsViewport
+        ? Math.max(0, Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0))
+        : 0
+      const centerDistance =
+        viewportHeight > 0
+          ? Math.abs(rect.top + rect.height / 2 - viewportHeight / 2)
+          : Number.POSITIVE_INFINITY
+
+      candidates.push({
+        observation,
+        intersectsViewport,
+        visibleHeight,
+        centerDistance,
+      })
+    }
+  }
+
+  if (candidates.length === 0) {
+    return null
+  }
+
+  candidates.sort((left, right) => {
+    if (left.intersectsViewport !== right.intersectsViewport) {
+      return left.intersectsViewport ? -1 : 1
+    }
+
+    if (left.visibleHeight !== right.visibleHeight) {
+      return right.visibleHeight - left.visibleHeight
+    }
+
+    if (left.centerDistance !== right.centerDistance) {
+      return left.centerDistance - right.centerDistance
+    }
+
+    return right.observation.pageNumber - left.observation.pageNumber
+  })
+
+  return candidates[0]?.observation ?? null
+}
+
 export function enrichReaderContext(
   baseContext: ReaderContext,
   observations: ObservedReaderPage[],
+  primaryObservation: ObservedReaderPage | null = observations[0] ?? null,
 ): ReaderContext {
-  const firstObservation = observations[0] ?? null
-
   return {
     ...baseContext,
-    chapterId: baseContext.chapterId ?? firstObservation?.chapterId ?? null,
-    verseKey: baseContext.verseKey ?? firstObservation?.verseKey ?? null,
-    pageNumber: baseContext.pageNumber ?? firstObservation?.pageNumber ?? null,
-    hizbNumber: baseContext.hizbNumber ?? firstObservation?.hizbNumber ?? null,
+    chapterId: primaryObservation?.chapterId ?? baseContext.chapterId ?? null,
+    verseKey: primaryObservation?.verseKey ?? baseContext.verseKey ?? null,
+    pageNumber: primaryObservation?.pageNumber ?? baseContext.pageNumber ?? null,
+    hizbNumber: primaryObservation?.hizbNumber ?? baseContext.hizbNumber ?? null,
     automaticTrackingAvailable: observations.length > 0,
   }
 }

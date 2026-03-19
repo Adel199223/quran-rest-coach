@@ -13,7 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "validate:agent-docs": "node tooling/validate-agent-docs.mjs",
-    "validate:extension": "node tooling/validate-extension-smoke.mjs",
+    "validate:extension": "node tooling/validate-extension-suite.mjs",
     "validate:workspace-hygiene": "node tooling/validate-workspace-hygiene.mjs",
     "validate:ui": "node tooling/validate-ui-surface.mjs"
   },

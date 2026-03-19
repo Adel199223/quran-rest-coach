@@ -30,7 +30,7 @@
   --focus-ring: #247b64;
   --button-ink: #f8fdf9;
 
-  --panel-shadow: 0 22px 40px -34px #28332a70, 0 12px 24px -20px #29372f4d;
+  --panel-shadow: 0 16px 30px -28px #28332a52, 0 8px 18px -18px #29372f38;
 
   font-family: var(--font-ui);
   font-size: 17px;
@@ -79,7 +79,8 @@ p {
 h1,
 h2,
 h3 {
-  font-family: var(--font-display);
+  font-family: var(--font-ui);
+  letter-spacing: -0.02em;
 }
 
 button,

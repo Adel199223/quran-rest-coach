@@ -4,6 +4,7 @@ import {
   collectObservedReaderPages,
   enrichReaderContext,
   extractObservedReaderPageFromElement,
+  findPrimaryObservedReaderPage,
   parseReaderContextFromUrl,
 } from './quranContext'
 
@@ -80,5 +81,70 @@ describe('quran.com context helpers', () => {
     )
     expect(context.automaticTrackingAvailable).toBe(false)
     expect(context.pageNumber).toBeNull()
+  })
+
+  it('prefers the viewport-focused observation for the live reader context', () => {
+    document.body.innerHTML = `
+      <main>
+        <div data-page="51" data-verse-key="3:10" data-chapter-id="3" data-hizb="5"></div>
+        <div data-page="54" data-verse-key="3:15" data-chapter-id="3" data-hizb="6"></div>
+      </main>
+    `
+
+    const [olderPage, currentPage] = Array.from(document.querySelectorAll('[data-page]'))
+    if (!(olderPage instanceof HTMLElement) || !(currentPage instanceof HTMLElement)) {
+      throw new Error('Expected two tracked quran.com elements in the fixture DOM.')
+    }
+
+    Object.defineProperty(window, 'innerHeight', {
+      configurable: true,
+      value: 1_000,
+    })
+
+    olderPage.getBoundingClientRect = () =>
+      ({
+        top: -160,
+        bottom: 120,
+        left: 0,
+        right: 0,
+        width: 400,
+        height: 280,
+        x: 0,
+        y: -160,
+        toJSON: () => ({}),
+      }) as DOMRect
+
+    currentPage.getBoundingClientRect = () =>
+      ({
+        top: 320,
+        bottom: 760,
+        left: 0,
+        right: 0,
+        width: 400,
+        height: 440,
+        x: 0,
+        y: 320,
+        toJSON: () => ({}),
+      }) as DOMRect
+
+    const observations = collectObservedReaderPages(document, 4_000)
+    const primary = findPrimaryObservedReaderPage(document, 4_000)
+
+    expect(primary).toMatchObject({
+      pageNumber: 54,
+      verseKey: '3:15',
+      chapterId: '3',
+      hizbNumber: 6,
+    })
+
+    const context = enrichReaderContext(
+      parseReaderContextFromUrl('https://quran.com/3', 4_000),
+      observations,
+      primary,
+    )
+
+    expect(context.pageNumber).toBe(54)
+    expect(context.verseKey).toBe('3:15')
+    expect(context.hizbNumber).toBe(6)
   })
 })

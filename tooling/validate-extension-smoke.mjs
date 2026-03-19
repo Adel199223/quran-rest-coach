@@ -98,9 +98,53 @@ async function readActiveSessionTotalPages(sidepanelPage) {
   })
 }
 
-async function waitForAutoTrackedPages(sidepanelPage) {
+async function readStoredReaderContext(sidepanelPage) {
+  return sidepanelPage.evaluate(async () => {
+    const readerContextKey = 'qrc.readerContext.v1'
+    const result = await chrome.storage.local.get(readerContextKey)
+    const rawValue = result[readerContextKey]
+
+    if (typeof rawValue !== 'string') {
+      return null
+    }
+
+    const parsed = JSON.parse(rawValue)
+    return {
+      pageNumber: Number.isInteger(parsed?.pageNumber) ? parsed.pageNumber : null,
+      verseKey: typeof parsed?.verseKey === 'string' ? parsed.verseKey : null,
+      chapterId: typeof parsed?.chapterId === 'string' ? parsed.chapterId : null,
+      hizbNumber: Number.isInteger(parsed?.hizbNumber) ? parsed.hizbNumber : null,
+    }
+  })
+}
+
+async function waitForReaderContextMatch(sidepanelPage, expected) {
   await sidepanelPage.waitForFunction(
-    async () => {
+    async (expectedContext) => {
+      const readerContextKey = 'qrc.readerContext.v1'
+      const result = await chrome.storage.local.get(readerContextKey)
+      const rawValue = result[readerContextKey]
+
+      if (typeof rawValue !== 'string') {
+        return false
+      }
+
+      const parsed = JSON.parse(rawValue)
+      return (
+        parsed?.pageNumber === expectedContext.pageNumber &&
+        (parsed?.verseKey ?? null) === expectedContext.verseKey &&
+        (parsed?.chapterId ?? null) === expectedContext.chapterId &&
+        (parsed?.hizbNumber ?? null) === expectedContext.hizbNumber
+      )
+    },
+    expected,
+    { timeout: 20_000 },
+  )
+}
+
+async function waitForAutoTrackedPages(sidepanelPage, minimumPages = 1) {
+  await sidepanelPage.waitForFunction(
+    async (minPages) => {
       const activeSessionKey = 'qrc.activeSession.v2'
       const result = await chrome.storage.local.get(activeSessionKey)
       const rawValue = result[activeSessionKey]
@@ -110,10 +154,145 @@ async function waitForAutoTrackedPages(sidepanelPage) {
       }
 
       const parsed = JSON.parse(rawValue)
-      return Number.isInteger(parsed?.totalPages) && parsed.totalPages >= 1
+      return Number.isInteger(parsed?.totalPages) && parsed.totalPages >= minPages
     },
+    minimumPages,
     { timeout: 20_000 },
   )
+}
+
+async function setSidePanelVisibility(sidepanelPage, open) {
+  await sidepanelPage.evaluate(
+    async (isOpen) => {
+      await chrome.runtime.sendMessage({
+        kind: 'session-command',
+        command: { type: 'set-side-panel-visibility', open: isOpen },
+      })
+    },
+    open,
+  )
+}
+
+async function ensureCheckboxState(locator, expected) {
+  if ((await locator.isChecked()) !== expected) {
+    await locator.click()
+  }
+}
+
+async function configurePressureMode(sidepanelPage) {
+  await sidepanelPage.getByRole('button', { name: /settings/i }).click()
+  await ensureCheckboxState(
+    sidepanelPage.getByLabel(/show countdown while reading/i),
+    true,
+  )
+  await ensureCheckboxState(
+    sidepanelPage.getByLabel(/pressure timer while reading/i),
+    true,
+  )
+  await ensureCheckboxState(
+    sidepanelPage.getByLabel(/play a soft cue in the final 10 seconds/i),
+    true,
+  )
+  await sidepanelPage
+    .getByLabel(/start delay before reading/i)
+    .fill('5')
+  await sidepanelPage.getByRole('button', { name: /advanced timing/i }).click()
+  const paceField = sidepanelPage.getByLabel('Default pace for 2 pages (seconds)')
+  await paceField.fill('30')
+  await sidepanelPage.getByRole('button', { name: /^session$/i }).click()
+}
+
+async function waitForCompanionSuppressed(quranPage) {
+  await quranPage.waitForFunction(() => {
+    return (
+      document.querySelector('#qrc-content-root') !== null &&
+      document.querySelector('#qrc-content-root .qrc-chip') === null &&
+      document.querySelector('#qrc-content-root .qrc-toast') === null
+    )
+  }, { timeout: 20_000 })
+}
+
+async function readObservedPageNumbers(quranPage) {
+  return quranPage.evaluate(() => {
+    const matches = document.querySelectorAll('[data-page][data-verse-key], [data-page][data-chapter-id]')
+    const pages = new Set()
+
+    for (const match of matches) {
+      const raw = match.getAttribute('data-page')
+      const parsed = Number.parseInt(raw ?? '', 10)
+      if (Number.isInteger(parsed) && parsed > 0) {
+        pages.add(parsed)
+      }
+    }
+
+    return [...pages].sort((left, right) => left - right)
+  })
+}
+
+async function readPrimaryViewportMetadata(quranPage) {
+  return quranPage.evaluate(() => {
+    const selectors = ['[data-page][data-verse-key]', '[data-page][data-chapter-id]']
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight
+    const candidates = []
+
+    for (const selector of selectors) {
+      const matches = document.querySelectorAll(selector)
+      for (const match of matches) {
+        const rawPage = match.getAttribute('data-page')
+        const pageNumber = Number.parseInt(rawPage ?? '', 10)
+        if (!Number.isInteger(pageNumber) || pageNumber <= 0) {
+          continue
+        }
+
+        const rect = match.getBoundingClientRect()
+        const intersectsViewport = rect.bottom > 0 && rect.top < viewportHeight
+        const visibleHeight = intersectsViewport
+          ? Math.max(0, Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0))
+          : 0
+        const centerDistance = Math.abs(rect.top + rect.height / 2 - viewportHeight / 2)
+        const rawHizb = match.getAttribute('data-hizb')
+        const hizbNumber = Number.parseInt(rawHizb ?? '', 10)
+
+        candidates.push({
+          pageNumber,
+          verseKey: match.getAttribute('data-verse-key'),
+          chapterId: match.getAttribute('data-chapter-id'),
+          hizbNumber: Number.isInteger(hizbNumber) && hizbNumber > 0 ? hizbNumber : null,
+          intersectsViewport,
+          visibleHeight,
+          centerDistance,
+        })
+      }
+    }
+
+    if (candidates.length === 0) {
+      return null
+    }
+
+    candidates.sort((left, right) => {
+      if (left.intersectsViewport !== right.intersectsViewport) {
+        return left.intersectsViewport ? -1 : 1
+      }
+
+      if (left.visibleHeight !== right.visibleHeight) {
+        return right.visibleHeight - left.visibleHeight
+      }
+
+      if (left.centerDistance !== right.centerDistance) {
+        return left.centerDistance - right.centerDistance
+      }
+
+      return right.pageNumber - left.pageNumber
+    })
+
+    const winner = candidates[0]
+    return {
+      pageNumber: winner.pageNumber,
+      verseKey: winner.verseKey ?? null,
+      chapterId: winner.chapterId ?? null,
+      hizbNumber: winner.hizbNumber,
+    }
+  })
 }
 
 export async function runExtensionSmokeValidation(options = {}) {
@@ -161,6 +340,12 @@ export async function runExtensionSmokeValidation(options = {}) {
       at: new Date().toISOString(),
     })
 
+    await configurePressureMode(sidepanelPage)
+    steps.push({
+      name: 'pressure-mode-enabled',
+      at: new Date().toISOString(),
+    })
+
     quranPage = await context.newPage()
     await quranPage.goto(quranUrl, {
       waitUntil: 'domcontentloaded',
@@ -183,17 +368,63 @@ export async function runExtensionSmokeValidation(options = {}) {
       metadataCount,
     })
 
-    await quranPage.locator('#qrc-content-root').waitFor({
-      state: 'attached',
-      timeout: 20_000,
-    })
-    await quranPage.locator('#qrc-content-root .qrc-chip').waitFor({ timeout: 20_000 })
+    await quranPage.locator('#qrc-content-root').waitFor({ state: 'attached', timeout: 20_000 })
+    await waitForCompanionSuppressed(quranPage)
     steps.push({
       name: 'content-companion-mounted',
       at: new Date().toISOString(),
     })
+    steps.push({
+      name: 'companion-suppressed-while-side-panel-open',
+      at: new Date().toISOString(),
+    })
+
+    const initialViewportMetadata = await readPrimaryViewportMetadata(quranPage)
+    if (!initialViewportMetadata) {
+      throw new Error('Unable to read the primary Quran.com metadata in the viewport.')
+    }
+
+    await waitForReaderContextMatch(sidepanelPage, initialViewportMetadata)
+    steps.push({
+      name: 'reader-context-matches-initial-viewport',
+      at: new Date().toISOString(),
+      readerContext: await readStoredReaderContext(sidepanelPage),
+    })
+
+    const observedPages = await readObservedPageNumbers(quranPage)
+    const nextViewportPage = observedPages.find(
+      (pageNumber) => pageNumber > initialViewportMetadata.pageNumber,
+    )
+
+    if (nextViewportPage) {
+      await quranPage.locator(`[data-page="${nextViewportPage}"]`).first().scrollIntoViewIfNeeded()
+      await quranPage.waitForTimeout(1_000)
+      const updatedViewportMetadata = await readPrimaryViewportMetadata(quranPage)
+
+      if (!updatedViewportMetadata) {
+        throw new Error('Unable to read the updated Quran.com metadata after scrolling.')
+      }
+
+      await waitForReaderContextMatch(sidepanelPage, updatedViewportMetadata)
+      steps.push({
+        name: 'reader-context-updates-while-scrolling',
+        at: new Date().toISOString(),
+        readerContext: await readStoredReaderContext(sidepanelPage),
+      })
+    }
 
     await sidepanelPage.getByRole('button', { name: /start session/i }).click()
+    await sidepanelPage.getByRole('button', { name: /cancel/i }).waitFor({ timeout: 15_000 })
+    await sidepanelPage.getByRole('button', { name: /cancel/i }).click()
+    await sidepanelPage.getByRole('button', { name: /start session/i }).waitFor({ timeout: 15_000 })
+    steps.push({
+      name: 'pending-start-can-be-cancelled',
+      at: new Date().toISOString(),
+    })
+
+    await sidepanelPage.getByRole('button', { name: /start session/i }).click()
+    await sidepanelPage.getByRole('button', { name: /start now/i }).waitFor({ timeout: 15_000 })
+    await sidepanelPage.getByRole('button', { name: /start now/i }).click()
     await sidepanelPage.getByRole('button', { name: /end session/i }).waitFor({ timeout: 15_000 })
     steps.push({
       name: 'session-started',
@@ -209,8 +440,118 @@ export async function runExtensionSmokeValidation(options = {}) {
       trackedPages,
     })
 
-    await quranPage.screenshot({ path: artifacts.quranScreenshot, fullPage: true })
+    await sidepanelPage.locator('.metric-card-pressure-final-ten').first().waitFor({
+      timeout: 25_000,
+    })
+    await sidepanelPage.getByText(/^timer$/i).waitFor({ timeout: 25_000 })
+    await sidepanelPage.getByText(/\ds left|now/i).first().waitFor({ timeout: 25_000 })
+    steps.push({
+      name: 'sidepanel-pressure-phase-visible',
+      at: new Date().toISOString(),
+    })
+
+    await waitForCompanionSuppressed(quranPage)
+    steps.push({
+      name: 'active-session-cues-suppressed-while-side-panel-open',
+      at: new Date().toISOString(),
+    })
+
     await sidepanelPage.screenshot({ path: artifacts.sidepanelScreenshot, fullPage: true })
+
+    await sidepanelPage.getByRole('button', { name: /end session/i }).click()
+    await sidepanelPage.getByRole('heading', { name: /session complete/i }).waitFor({
+      timeout: 15_000,
+    })
+    await sidepanelPage.getByRole('button', { name: /view history/i }).click()
+    await sidepanelPage.getByRole('heading', { name: /history/i }).waitFor({ timeout: 15_000 })
+    await sidepanelPage.getByRole('button', { name: /^session$/i }).click()
+    await sidepanelPage.getByRole('button', { name: /start session/i }).waitFor({ timeout: 15_000 })
+    await sidepanelPage.getByRole('button', { name: /start session/i }).click()
+    await sidepanelPage.getByRole('button', { name: /cancel/i }).waitFor({ timeout: 15_000 })
+    await setSidePanelVisibility(sidepanelPage, false)
+    await sidepanelPage.close()
+    sidepanelPage = null
+    await quranPage.waitForTimeout(3_000)
+
+    sidepanelPage = await context.newPage()
+    await sidepanelPage.goto(`chrome-extension://${extensionId}/sidepanel.html`, {
+      waitUntil: 'domcontentloaded',
+      timeout: 15_000,
+    })
+    await sidepanelPage.getByRole('button', { name: /start session/i }).waitFor({ timeout: 15_000 })
+    steps.push({
+      name: 'closing-side-panel-cancels-pending-start',
+      at: new Date().toISOString(),
+    })
+
+    await sidepanelPage.getByRole('button', { name: /start session/i }).click()
+    await sidepanelPage.getByRole('button', { name: /start now/i }).waitFor({ timeout: 15_000 })
+    await sidepanelPage.getByRole('button', { name: /start now/i }).click()
+    await sidepanelPage.getByRole('button', { name: /end session/i }).waitFor({ timeout: 15_000 })
+    await waitForAutoTrackedPages(sidepanelPage)
+    await setSidePanelVisibility(sidepanelPage, false)
+    await sidepanelPage.close()
+    sidepanelPage = null
+    await quranPage.locator('#qrc-content-root .qrc-chip').waitFor({ timeout: 20_000 })
+    await quranPage.locator('#qrc-content-root .qrc-chip-phase-final-ten').waitFor({
+      timeout: 30_000,
+    })
+    await quranPage
+      .locator('#qrc-content-root .qrc-chip-subtitle')
+      .filter({ hasText: /\ds left|now/i })
+      .first()
+      .waitFor({ timeout: 30_000 })
+    steps.push({
+      name: 'collapsed-chip-visible-when-side-panel-closed',
+      at: new Date().toISOString(),
+    })
+    steps.push({
+      name: 'collapsed-chip-mirrors-pressure-phase',
+      at: new Date().toISOString(),
+    })
+
+    const currentViewportMetadata = await readPrimaryViewportMetadata(quranPage)
+    const nextObservedPage = observedPages.find(
+      (pageNumber) => pageNumber > (currentViewportMetadata?.pageNumber ?? observedPages[0] ?? 0),
+    )
+
+    if (nextObservedPage) {
+      await quranPage.locator(`[data-page="${nextObservedPage}"]`).first().scrollIntoViewIfNeeded()
+      await quranPage.locator('#qrc-content-root .qrc-toast').waitFor({ timeout: 20_000 })
+      steps.push({
+        name: 'break-prompt-visible-when-side-panel-closed',
+        at: new Date().toISOString(),
+        observedPage: nextObservedPage,
+      })
+
+      sidepanelPage = await context.newPage()
+      await sidepanelPage.goto(`chrome-extension://${extensionId}/sidepanel.html`, {
+        waitUntil: 'domcontentloaded',
+        timeout: 15_000,
+      })
+      await sidepanelPage.getByRole('dialog', { name: /micro break/i }).waitFor({
+        timeout: 15_000,
+      })
+      await waitForCompanionSuppressed(quranPage)
+      steps.push({
+        name: 'break-prompt-suppressed-when-side-panel-reopened',
+        at: new Date().toISOString(),
+      })
+
+      await sidepanelPage.getByRole('button', { name: /resume now/i }).click()
+      await sidepanelPage.getByRole('dialog', { name: /micro break/i }).waitFor({
+        state: 'detached',
+        timeout: 15_000,
+      })
+      await sidepanelPage.getByRole('button', { name: /end session/i }).waitFor({ timeout: 15_000 })
+      await waitForCompanionSuppressed(quranPage)
+      steps.push({
+        name: 'resume-returns-to-quiet-reading-state',
+        at: new Date().toISOString(),
+      })
+    }
+
+    await quranPage.screenshot({ path: artifacts.quranScreenshot, fullPage: true })
 
     const summary = buildSummary({
       quranUrl,

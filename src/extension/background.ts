@@ -1,9 +1,11 @@
 import {
   addPages,
+  advanceSessionTimers,
   endSession,
   observeReaderPage,
   pauseSession,
   resumeSession,
+  snoozeReadingDeadline,
   skipBreak,
   snoozeBreak,
   startSession,
@@ -16,6 +18,7 @@ import { ChromeStorageAdapter } from './chromeStorage'
 import type { ExtensionMessage } from './messages'
 
 const repository = new LocalStorageRepository(new ChromeStorageAdapter())
+let sidePanelOpen = false
 
 async function openSidePanelForSender(sender: { tab?: { id?: number } }) {
   const tabId = sender.tab?.id
@@ -43,6 +46,15 @@ async function handleSessionCommand(
     return openSidePanelForSender(sender)
   }
 
+  if (command.type === 'get-side-panel-visibility') {
+    return { ok: true, panelOpen: sidePanelOpen }
+  }
+
+  if (command.type === 'set-side-panel-visibility') {
+    sidePanelOpen = command.open
+    return { ok: true, panelOpen: sidePanelOpen }
+  }
+
   if (command.type === 'export-data') {
     return {
       ok: true,
@@ -62,7 +74,7 @@ async function handleSessionCommand(
 
   switch (command.type) {
     case 'start-session':
-      await repository.saveActiveSession(startSession(nowMs))
+      await repository.saveActiveSession(startSession(nowMs, command.intent ?? 'flow', settings))
       return { ok: true }
     case 'add-pages':
       if (!activeSession) {
@@ -70,11 +82,23 @@ async function handleSessionCommand(
       }
       await repository.saveActiveSession(addPages(activeSession, command.pages, settings, nowMs))
       return { ok: true }
+    case 'tick-session':
+      if (!activeSession) {
+        return { ok: true }
+      }
+      await repository.saveActiveSession(advanceSessionTimers(activeSession, settings, nowMs))
+      return { ok: true }
     case 'undo-last-pages':
       if (!activeSession) {
         return { ok: false, error: 'No session is active.' }
       }
       await repository.saveActiveSession(undoLastPages(activeSession, settings, nowMs))
+      return { ok: true }
+    case 'snooze-reading-deadline':
+      if (!activeSession) {
+        return { ok: false, error: 'No session is active.' }
+      }
+      await repository.saveActiveSession(snoozeReadingDeadline(activeSession, nowMs))
       return { ok: true }
     case 'toggle-pause':
       if (!activeSession) {
@@ -116,8 +140,8 @@ async function handleSessionCommand(
         if (result.historyEntry) {
           await repository.appendSessionHistory(result.historyEntry)
         }
+        return { ok: true, historyEntry: result.historyEntry }
       }
-      return { ok: true }
     case 'update-settings':
       await repository.saveTimerSettings(command.settings)
       return { ok: true }

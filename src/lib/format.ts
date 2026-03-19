@@ -7,6 +7,22 @@ export function formatClockDuration(totalSeconds: number): string {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }
 
+export function formatApproxDuration(totalSeconds: number): string {
+  const normalized = Math.max(0, Math.floor(totalSeconds))
+
+  if (normalized < 10) {
+    return 'Soon'
+  }
+
+  if (normalized < 60) {
+    const roundedSeconds = Math.max(10, Math.round(normalized / 5) * 5)
+    return `About ${roundedSeconds} sec`
+  }
+
+  const roundedMinutes = Math.max(1, Math.round(normalized / 60))
+  return `About ${roundedMinutes} ${roundedMinutes === 1 ? 'min' : 'min'}`
+}
+
 export function formatTimeStamp(epochMs: number, locale = 'en'): string {
   const date = new Date(epochMs)
   return new Intl.DateTimeFormat(locale, {
