@@ -42,6 +42,11 @@ You can use Quran Rest Coach in two ways:
 - Companion chip: the small Quran.com helper that appears while the extension is active.
 - Break prompt: a reminder that it is a good time to rest.
 - Pace hint: a gentle reminder that a break is near and your pace is running late.
+- Start delay: a short countdown before the session really begins.
+- Reading intent: the reading style you choose before starting, such as `Flow` or `Understand`.
+- Resume anchor: a quick reminder of where to pick up after an interruption.
+- Study later: save the current verse or page so you can return to it after the session, or jump into Quran.com study view later for saved verses.
+- Pace score: a single score that summarizes how closely you stayed on target in pressure mode.
 - Resume saved session: reopen the last unfinished session saved on this device.
 - History: your completed sessions saved locally on this device.
 
@@ -49,15 +54,29 @@ You can use Quran Rest Coach in two ways:
 
 ### Session
 
-This is where you spend most of your time. It shows your current status, page count, next break, and estimated time until the next break.
+This is where you spend most of your time. It shows your current status, page count, next break, timer, and the next small reading step.
+
+Before you start, you can choose a reading intent:
+
+- `Flow` for a steady read
+- `Understand` for smaller chunks with meaning checks
+- `Memorize` for shorter chunks with quick review
+- `Recover focus` for gentle restart sessions
+
+If start delay is enabled, `Start session` first shows a short countdown so you can get your eyes in place before reading begins.
 
 ### History
 
-This shows completed sessions from this device only. It helps you review duration, page count, breaks, snoozes, and skipped prompts.
+This shows completed sessions from this device only. It helps you review duration, page count, breaks, snoozes, skipped prompts, pace score, and anything you parked to study later.
+
+Saved items can open in two ways:
+
+- `Open on Quran.com` to go back to the reading page
+- `Open study view` for verse-based items when you want to switch into a more study-focused Quran.com page
 
 ### Settings
 
-This lets you change pace, break timing, and comfort options such as large text, reduced motion, high contrast, sepia mode, and soft chime prompts.
+This lets you change pace, break timing, start delay, pressure-mode cues, and comfort options such as large text, reduced motion, high contrast, sepia mode, and soft chime prompts.
 
 ### Quran.com Companion
 
@@ -75,7 +94,7 @@ Both versions stay local-first and use the same break logic.
 ## Import And Export
 
 - The standalone app and the extension store data in different browser locations.
-- Use export to save your settings, active session, and history to a JSON file.
+- Use export to save your settings, active session, history, and study-later queue to a JSON file.
 - Use import in the other shell to bring that data in.
 
 ## Things To Know

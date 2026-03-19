@@ -18,15 +18,18 @@
     {
       "id": "reading_session",
       "doc": "docs/assistant/workflows/READING_SESSION_WORKFLOW.md",
-      "scope": "Explicit session start, Quran.com page observation, break tiers, chip/toast behavior, and correction controls",
+      "scope": "Explicit session start, pre-start countdown, reading-intent coaching, pressure pacing, pace score feedback, resume anchors, Quran.com page observation, break tiers, chip/toast behavior, study-later capture, and correction controls",
       "primary_files": [
         "src/App.tsx",
         "src/app/CoachDashboard.tsx",
+        "src/app/view-model.ts",
         "src/domain/session.ts",
         "src/domain/breakEngine.ts",
         "src/components/SessionSurface.tsx",
+        "src/components/HistorySurface.tsx",
         "src/components/BreakOverlay.tsx",
         "src/extension/quranContext.ts",
+        "src/extension/SidePanelApp.tsx",
         "src/extension/content.tsx",
         "src/extension/ContentCompanion.tsx"
       ],
@@ -35,6 +38,7 @@
         "src/domain/session.readerTracking.test.ts",
         "src/domain/breakEngine.test.ts",
         "src/App.test.tsx",
+        "src/App.review.test.tsx",
         "src/extension/quranContext.test.ts",
         "src/extension/ContentCompanion.test.tsx"
       ],
@@ -46,7 +50,7 @@
     {
       "id": "local_persistence",
       "doc": "docs/assistant/workflows/LOCAL_PERSISTENCE_WORKFLOW.md",
-      "scope": "Repository contracts, adapters, schema versions, storage keys, reader context, and portability-safe changes",
+      "scope": "Repository contracts, adapters, schema versions, storage keys, pace-window/session-history persistence, reader context, study-later persistence, and portability-safe changes",
       "primary_files": [
         "src/lib/storage.ts",
         "src/extension/chromeStorage.ts",
@@ -69,11 +73,13 @@
     {
       "id": "ui_surface_validation",
       "doc": "docs/assistant/workflows/UI_SURFACE_VALIDATION_WORKFLOW.md",
-      "scope": "Standalone browser validation, extension side panel and chip validation, responsive checks, and artifact capture",
+      "scope": "Standalone browser validation, interactive review-route validation, extension side panel and chip validation, responsive checks, and artifact capture",
       "primary_files": [
         "src/App.tsx",
         "src/App.css",
         "src/app/CoachDashboard.tsx",
+        "src/app/reviewScenarioData.ts",
+        "src/app/reviewScenarios.tsx",
         "src/components/SessionSurface.tsx",
         "src/components/HistorySurface.tsx",
         "src/components/SettingsSurface.tsx",
@@ -89,6 +95,7 @@
       ],
       "targeted_tests": [
         "src/App.test.tsx",
+        "src/App.review.test.tsx",
         "src/app/CoachDashboard.extension.test.tsx",
         "src/extension/ContentCompanion.test.tsx",
         "test/tooling/validate-ui-surface.test.ts"
@@ -286,5 +293,5 @@
       "Open Quran.com and use the extension action to open the side panel."
     ]
   },
-  "last_updated": "2026-03-17"
+  "last_updated": "2026-03-19"
 }

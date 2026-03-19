@@ -18,12 +18,13 @@ Current keys:
 - `qrc.timerSettings.v1`
 - `qrc.activeSession.v2`
 - `qrc.sessionHistory.v2`
+- `qrc.studyLater.v1`
 - `qrc.readerContext.v1`
 
 Compatibility:
 
-- legacy `qrc.activeSession.v1` is normalized forward on read
-- legacy `qrc.sessionHistory.v1` is normalized forward on read
+- legacy `qrc.activeSession.v1` and `v2` payloads are normalized forward on read
+- legacy `qrc.sessionHistory.v1` and `v2` payloads are normalized forward on read
 - export/import JSON is the supported bridge between standalone and extension storage
 
 There is no backend and no remote sync path.
@@ -35,7 +36,7 @@ There is no backend and no remote sync path.
 - `src/domain/settings.ts`
   Normalizes incoming settings and supplies defaults.
 - `src/domain/session.ts`
-  Produces and mutates session state, observed-page tracking, and history-entry shape.
+  Produces and mutates session state, observed-page tracking, pace-window scoring fields, and history-entry shape.
 - `src/lib/storage.ts`
   Reads, validates, normalizes, migrates, exports, and writes repository records.
 - `src/extension/chromeStorage.ts`
@@ -53,7 +54,7 @@ There is no backend and no remote sync path.
 ## Portability Contract
 
 - Export format: `CoachExportData`
-- Includes: settings, active session, and history entries
+- Includes: settings, active session, history entries, and study-later items
 - Purpose: move data between standalone `localStorage` and extension `chrome.storage.local`
 - Reader context is runtime-local and not part of the export payload
 
@@ -63,6 +64,7 @@ There is no backend and no remote sync path.
 - Invalid persisted settings should normalize to defaults.
 - Invalid active-session payloads should resolve to `null`.
 - Invalid history arrays should filter out bad entries instead of poisoning the whole list.
+- Invalid study-later arrays should filter out bad items instead of poisoning the whole list.
 - Invalid reader-context payloads should resolve to `null`.
 - Invalid export JSON should be rejected with a clear error instead of partially importing.
 - Partial schema changes without portability or adapter updates are a drift risk and should be treated as incomplete work.
@@ -87,5 +89,6 @@ Most relevant tests:
 ## Notes
 
 - The repository uses code-level schema guards and normalization, not a full migration framework.
+- Storage keys stay stable even when the payload `schemaVersion` advances.
 - The extension cannot directly read the standalone app’s `localStorage`.
 - Future localization or RTL work should not silently change storage semantics without updating this doc.

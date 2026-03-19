@@ -8,6 +8,8 @@ This bridge doc is intentionally shorter than the canonical APP_KNOWLEDGE.md.
 - Two shells: standalone Vite app and MV3 Quran.com extension
 - Extension runtime: side panel, content script, background worker
 - Shared surfaces: session, history, settings
+- Shared reading-support layer: reading-intent presets, resume anchor, and study-later queue
+- Shared pacing support: pre-start countdown, pressure deadline cues, and pace score summaries
 - Shared storage repository with `localStorage` or `chrome.storage.local`
 - Portability via JSON export/import
 - Standalone UI artifacts live in `output/playwright/`
@@ -25,6 +27,7 @@ This bridge doc is intentionally shorter than the canonical APP_KNOWLEDGE.md.
 
 - Use the WSL-safe wrapper from this environment for npm commands.
 - Use `http://127.0.0.1:4173` as the canonical standalone local URL.
+- Use `?review=...` routes as reset-on-refresh interactive demos for shared-core UX review and Playwright checks.
 - `npm run build` validates the standalone app and produces the extension bundle in `dist/extension`.
 - `npm run validate:extension` is the repo-owned live Quran.com extension smoke harness.
 - GitHub Actions runs the stable remote validation subset; the live Quran.com smoke stays local.

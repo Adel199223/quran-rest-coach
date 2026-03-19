@@ -11,12 +11,20 @@ Quran Rest Coach is a local-first Quran reading coach with a shared React/TypeSc
 
 The product is designed around calm break prompts, page-based pacing, low-friction correction controls, and comfort settings that fit dyslexia-aware and ADHD-considerate reading sessions.
 
+The current shared core also supports reading-intent presets, a resume anchor after interruptions, and a local study-later queue for verses or pages that should be revisited without breaking reading flow. Verse-based saved items can also open directly into Quran.com study-oriented verse pages.
+
+Pressure-mode sessions can also use a configurable pre-start countdown, deadline cues, catch-up windows, and a motivating pace score with short “why” summaries.
+
 ## Current Status
 
 - Standalone `Session`, `History`, and `Settings` surfaces are implemented.
 - Extension side panel, background worker, and Quran.com content companion are implemented.
 - Automatic Quran.com route detection and distinct-page observation are implemented.
 - Local-only persistence and cross-shell JSON import/export are implemented.
+- Reading-intent presets, resume-anchor guidance, and study-later capture are implemented in the shared core.
+- Verse-based study-later items can reopen straight into Quran.com verse study pages.
+- Deterministic `?review=...` routes are implemented as reset-on-refresh interactive demos for app-first UX review.
+- Shared pre-start countdown, pressure deadline cues, and pace scoring are implemented.
 - GitHub Actions CI is implemented for the stable repo validation contract.
 - Tests, lint, and build are passing.
 - Repo-owned live Quran.com extension smoke validation is implemented.
@@ -51,13 +59,20 @@ There is no backend, no Quran.com account sync, and no remote persistence.
 
 - Shared `Session`, `History`, and `Settings` surfaces
 - Manual page logging and break handling
+- Reading-intent selection before session start
+- Optional pre-start delay before a session becomes active
+- Resume-anchor and next-step guidance during active sessions
+- Pressure-mode pace score with short reasons in-session, in summaries, and in history
 - Export/import JSON for portability
+- Interactive `?review=...` routes for deterministic UI validation and manual review
 
 ### Extension Side Panel
 
 - Reading-first version of the same `Session`, `History`, and `Settings` surfaces
 - Reader-context card showing locale, route type, chapter, verse, and page state
 - Narrow layout that keeps session controls primary and secondary detail collapsible
+- Quran.com-aware resume anchor and study-later capture on recognized reader views
+- History view can reopen saved items on Quran.com or jump directly into verse study pages when the saved item is verse-specific
 
 ### Quran.com Companion Chip
 
@@ -88,6 +103,15 @@ There is no backend, no Quran.com account sync, and no remote persistence.
 - Break state supports completion, snooze, skip, and pause/resume.
 - Hybrid pace nudges are used when the next break is one page away and pace is overdue.
 
+## Pressure Pace Model
+
+- Pressure mode keeps the page-based break tiers but adds scheduled pace windows toward the next break target.
+- A shared pre-start countdown can delay the real session start so the reader can get their eyes in place first.
+- Final-ten-seconds reading deadline cues are visual by default with a single soft warning cue when enabled.
+- Missing a deadline consumes the scheduled break as a catch-up window instead of opening the rest prompt immediately.
+- Pace score stays pace-only. It rewards on-time windows, recovery during catch-up, and streaks, while penalizing deadline extensions, missed deadlines, and ending late.
+- The app surfaces one main `0..100` score plus short reasons instead of multiple always-visible sub-scores.
+
 ## Persistence Model
 
 Persistence is local-first through the async repository in `src/lib/storage.ts`.
@@ -102,15 +126,18 @@ Current keys:
 - `qrc.timerSettings.v1`
 - `qrc.activeSession.v2`
 - `qrc.sessionHistory.v2`
+- `qrc.studyLater.v1`
 - `qrc.readerContext.v1`
 
 Compatibility notes:
 
-- Legacy active-session and history payloads from `v1` are normalized forward when read
+- Legacy active-session and history payloads from `v1` and `v2` are normalized forward when read
 - Cross-shell portability is handled through `CoachExportData` JSON export/import
+- Export/import includes settings, active session, history, and study-later items
+- Reader context stays runtime-local and is not part of the export payload
 - The extension cannot directly read the standalone app’s `localStorage`, so import/export is the supported bridge
 
-Schema versions live in `src/domain/contracts.ts`. Any persistence shape change should update contracts, normalization logic, storage reads/writes, portability behavior, and targeted tests together.
+Schema versions live in `src/domain/contracts.ts`. The current contracts include schema-versioned settings, active-session, and history payloads inside the stable storage keys above. Any persistence shape change should update contracts, normalization logic, storage reads/writes, portability behavior, and targeted tests together.
 
 ## Validation Commands
 

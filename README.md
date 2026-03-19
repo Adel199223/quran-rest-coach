@@ -41,6 +41,10 @@ Load the unpacked extension from `dist/extension`:
 - The extension side panel lives in `src/extension/SidePanelApp.tsx`
 - The Quran.com content script lives in `src/extension/content.tsx`
 - The extension background service worker lives in `src/extension/background.ts`
+- Shared reading-support features include reading-intent presets, a resume anchor, and a local study-later queue with direct Quran.com study-view handoff
+- Pressure-focused sessions can use a pre-start countdown, deadline cues, pace windows, and a single pace score with short reason summaries
+
+The standalone app also exposes deterministic `?review=...` routes for reset-on-refresh UI checks and Playwright validation.
 
 The extension reads stable Quran.com metadata from `data-page`, `data-verse-key`, `data-chapter-id`, and `data-hizb`. It does not depend on private APIs or fragile CSS-module selectors.
 
@@ -58,7 +62,7 @@ The extension reads stable Quran.com metadata from `data-page`, `data-verse-key`
 - The standalone app stores locally in browser `localStorage`
 - The extension stores locally in `chrome.storage.local`
 - Neither shell can read the other storage directly
-- Use built-in export/import JSON to move settings, active sessions, and history between shells
+- Use built-in export/import JSON to move settings, active sessions, history, and the study-later queue between shells
 
 ## Validate
 
